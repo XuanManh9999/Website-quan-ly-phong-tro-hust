@@ -4,11 +4,11 @@
 
 | Thuộc tính | Giá trị |
 |------------|---------|
-| Phiên bản tài liệu | 1.1 |
-| Ngày cập nhật | 29/03/2026 |
+| Phiên bản tài liệu | 1.4 |
+| Ngày cập nhật | 08/04/2026 |
 | Đối tượng đọc | Product Owner, Dev, QA, thầy hướng dẫn |
 | Phạm vi repo | `front-end` (React), `backend` (Spring Boot) |
-| Trạng thái | Đang hoàn thiện đặc tả — đồng bộ với code khi triển khai |
+| Trạng thái | Đặc tả + kế hoạch triển khai đang được đồng bộ theo code |
 
 **Mục đích:** Mô tả **nghiệp vụ**, **kiến trúc**, **phân quyền**, **tích hợp** (VNPay, email, OTP, Gemini) và **nội dung** (tin đăng phòng, **bài viết**/blog/CMS) để triển khai thống nhất và có thể kiểm chứng (testable requirements).
 
@@ -33,6 +33,8 @@
 15. [Lộ trình (roadmap)](#15-lộ-trình-roadmap)  
 16. [Thuật ngữ](#16-thuật-ngữ)  
 17. [Lịch sử sửa đổi tài liệu](#17-lịch-sử-sửa-đổi-tài-liệu)  
+18. [Kế hoạch triển khai chi tiết (Execution checklist)](#18-kế-hoạch-triển-khai-chi-tiết-execution-checklist)  
+19. [Definition of Done (DoD)](#19-definition-of-done-dod)  
 
 ---
 
@@ -113,7 +115,7 @@ Ba tác nhân: **Seeker**, **Landlord**, **Admin** (chi tiết mục 5).
 | Build tool | Vite + TypeScript |
 | UI | Ant Design 5.x (Layout, Form, Table, Upload, Typography…) |
 | HTTP | Axios + interceptors (Bearer JWT), xử lý lỗi tập trung |
-| Routing | React Router 6 |
+| Routing | React Router 7 |
 | State | Redux Toolkit hoặc Zustand (tuỳ độ phức tạp team) |
 | Form & validation | Ant Form + Zod/Yup (tuỳ chọn) |
 | Bản đồ | Leaflet + OpenStreetMap hoặc Google Maps API |
@@ -365,7 +367,112 @@ Chi tiết schema request/response nên mô tả trong **OpenAPI** khi code.
 |-----------|------|-------------------|
 | 1.0 | (ban đầu) | Khung ý tưởng: stack, 3 vai, listing, VNPay, Gemini |
 | 1.1 | 29/03/2026 | Bổ sung module **bài viết/CMS**, ma trận quyền, NFR, kiểm thử, triển khai, rủi ro, thuật ngữ; chỉnh lại cấu trúc tài liệu |
+| 1.2 | 08/04/2026 | Chuẩn hóa tài liệu theo trạng thái triển khai thực tế front-end; bổ sung checklist thực thi, DoD và phụ lục tăng trưởng |
+| 1.3 | 08/04/2026 | Cập nhật trạng thái hoàn thiện: landlord/admin/payment UI, route guard FE, chatbot ổn định hơn; loại bỏ ghi chú lạc phạm vi |
+| 1.4 | 08/04/2026 | Bổ sung trang kết quả thanh toán VNPay, nâng cấp chatbot (retry + lưu phiên + gợi ý nhanh), hoàn thiện form SEO bài viết |
 
 ---
 
 *Tài liệu “living document”: cập nhật phiên bản và mục 17 mỗi khi thay đổi nghiệp vụ hoặc phạm vi kỹ thuật đáng kể.*
+
+
+## 18. Kế hoạch triển khai chi tiết (Execution checklist)
+
+Mục này dùng như checklist để triển khai và nghiệm thu theo sprint.
+
+### 18.1. Trạng thái hiện tại (snapshot)
+
+| Hạng mục | Trạng thái | Ghi chú |
+|----------|------------|---------|
+| Front-end public pages (Home, Listing, Article, Login) | Đang tốt | Đã tách component, có lazy loading route, có render Markdown |
+| Chatbot widget (UI) | Đang tốt | Đã có Drawer chat + gọi API backend |
+| Admin CMS bài viết (UI + API) | Chưa hoàn tất | Cần CRUD, publish flow, preview |
+| Landlord listing workflow | Chưa hoàn tất | Cần tạo/sửa/submit duyệt + quota |
+| VNPay end-to-end | Chưa hoàn tất | Cần IPN idempotent + đối soát |
+| OTP + hardening bảo mật | Chưa hoàn tất | Cần rà soát rate-limit, audit log |
+
+### 18.2. Checklist theo module
+
+#### A) Authentication & Profile
+- [ ] Đăng ký/đăng nhập + refresh token (nếu dùng)
+- [ ] OTP luồng quên mật khẩu/đổi email
+- [ ] Role guard ở FE và BE (`SEEKER`, `LANDLORD`, `ADMIN`)
+- [ ] Trang hồ sơ cá nhân (xem/sửa thông tin cơ bản)
+
+#### B) Listing & Quota
+- [ ] CRUD tin cho landlord (ảnh, địa chỉ, giá, mô tả)
+- [ ] Submit duyệt (`PENDING_REVIEW`) và admin duyệt/reject
+- [ ] Rule quota 5 tin/tháng được đặc tả + test rõ ràng
+- [ ] Bộ lọc nâng cao (giá min/max, diện tích, tiện ích)
+
+#### C) Bài viết/CMS
+- [ ] Admin CRUD bài viết + category + tag
+- [ ] Trạng thái bài viết `DRAFT/PUBLISHED/ARCHIVED`
+- [ ] SEO fields (meta title/description, og image)
+- [ ] Public page có bài liên quan + view count chống spam
+
+#### D) Payment VNPay
+- [ ] Tạo payment intent/order
+- [ ] Redirect + return URL xử lý trạng thái
+- [ ] IPN verify chữ ký + idempotent
+- [ ] Áp dụng quota/gói sau khi `PAID` + audit log
+
+#### E) Chatbot Gemini
+- [ ] Giới hạn request/user/ngày
+- [ ] Filter prompt nhạy cảm + cảnh báo pháp lý
+- [ ] Gợi ý link bài viết liên quan trong câu trả lời
+- [ ] Chuẩn bị phase 2: RAG từ kho bài viết
+
+#### F) Admin Analytics
+- [ ] Dashboard user/listing/payment/article
+- [ ] Biểu đồ theo ngày/tuần/tháng
+- [ ] Export CSV cơ bản (tùy chọn)
+
+### 18.3. Mốc bàn giao đề xuất
+
+| Sprint | Phạm vi chính | Kết quả kỳ vọng |
+|--------|---------------|-----------------|
+| Sprint 1 | Auth + Listing public + CMS public | User tìm được phòng, đọc bài ổn định |
+| Sprint 2 | Landlord workflow + quota + admin duyệt | Vận hành đăng tin đúng nghiệp vụ |
+| Sprint 3 | VNPay + analytics + hardening | Sẵn sàng demo end-to-end |
+
+## 19. Definition of Done (DoD)
+
+Một hạng mục chỉ coi là "xong" khi đạt đủ:
+
+- [ ] Có đặc tả ngắn gọn (input/output, role, edge cases)
+- [ ] Có API contract rõ ràng (OpenAPI hoặc tài liệu endpoint)
+- [ ] Có test tối thiểu (unit/integration hoặc checklist test tay có bằng chứng)
+- [ ] Có xử lý loading/error/empty state ở front-end
+- [ ] Có log và thông báo lỗi đủ để debug ở backend
+- [ ] Không có lỗi lint/build; không lộ secret trong code/repo
+- [ ] Đã cập nhật lại tài liệu này (mục 17 + mục liên quan)
+
+---
+
+## Phụ lục A - Gợi ý tăng trưởng & vận hành nội dung
+
+### A.1. Thu hút người dùng
+
+**Kênh miễn phí**
+- Đăng vào hội nhóm sinh viên, thuê nhà (Facebook, Zalo, TikTok community).
+- Nội dung ngắn dạng checklist/kinh nghiệm để kéo về bài chi tiết trên website.
+
+**Kênh trả phí**
+- Chạy quảng cáo Google/Facebook theo khu vực quanh HUST.
+- Tập trung landing page nhanh, rõ CTA và có social proof (đánh giá, số tin mới).
+
+### A.2. Chiến lược nội dung
+
+- Viết cụm bài SEO theo nhu cầu thật: giá phòng theo khu vực, checklist xem phòng, hợp đồng.
+- Mỗi bài có CTA rõ: "Xem phòng theo khu vực", "Dùng chatbot để lọc nhanh".
+
+### A.3. Uy tín & chống lừa đảo
+
+- Cơ chế đánh giá chủ trọ/người thuê sau giao dịch.
+- Ưu tiên hiển thị tin đã xác minh và tài khoản có lịch sử tốt.
+
+### A.4. Ghi chú AI/RAG
+
+- Phase hiện tại: Gemini 2.5 Flash qua backend proxy.
+- Phase sau: RAG từ kho bài viết + FAQ nội bộ để tăng độ chính xác và khả năng dẫn nguồn.

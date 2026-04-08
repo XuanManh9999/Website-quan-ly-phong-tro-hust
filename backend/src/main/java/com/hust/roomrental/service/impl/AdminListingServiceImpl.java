@@ -3,12 +3,17 @@ package com.hust.roomrental.service.impl;
 import com.hust.roomrental.domain.entity.Listing;
 import com.hust.roomrental.domain.entity.User;
 import com.hust.roomrental.domain.enums.ListingStatus;
+import com.hust.roomrental.dto.common.PageResponse;
+import com.hust.roomrental.dto.listing.ListingResponse;
 import com.hust.roomrental.exception.ApiException;
 import com.hust.roomrental.repository.ListingRepository;
 import com.hust.roomrental.repository.UserRepository;
 import com.hust.roomrental.service.AdminListingService;
 import com.hust.roomrental.service.ListingQuotaService;
+import com.hust.roomrental.service.mapper.ListingMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +27,13 @@ public class AdminListingServiceImpl implements AdminListingService {
     private final ListingRepository listingRepository;
     private final UserRepository userRepository;
     private final ListingQuotaService listingQuotaService;
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ListingResponse> listPending(Pageable pageable) {
+        Page<Listing> page = listingRepository.findByStatus(ListingStatus.PENDING_REVIEW, pageable);
+        return PageResponse.from(page.map(ListingMapper::toResponse));
+    }
 
     @Override
     @Transactional

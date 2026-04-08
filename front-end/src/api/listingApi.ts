@@ -7,6 +7,14 @@ export interface ListingSummary {
   district: string | null
   address: string
   status: string
+  roomAvailable?: boolean
+  areaM2?: number
+}
+
+export interface ListingDetail extends ListingSummary {
+  description?: string
+  ownerName?: string
+  images?: Array<{ url: string; sortOrder?: number }>
 }
 
 export interface PageResponse<T> {
@@ -22,14 +30,16 @@ export async function fetchListings(params: {
   size?: number
   district?: string
   q?: string
+  minPrice?: number
+  maxPrice?: number
 }) {
-  const { data } = await http.get<PageResponse<Record<string, unknown>>>('/api/v1/listings', {
+  const { data } = await http.get<PageResponse<ListingSummary>>('/api/v1/listings', {
     params,
   })
   return data
 }
 
 export async function fetchListingById(id: number) {
-  const { data } = await http.get(`/api/v1/listings/${id}`)
+  const { data } = await http.get<ListingDetail>(`/api/v1/listings/${id}`)
   return data
 }

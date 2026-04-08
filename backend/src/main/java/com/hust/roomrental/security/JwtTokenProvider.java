@@ -10,8 +10,6 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
@@ -31,7 +29,7 @@ public class JwtTokenProvider {
                 .expiration(Date.from(exp))
                 .claim("uid", user.getId())
                 .claim("role", user.getRole().name())
-                .signWith(signingKey())
+                .signWith(signingKey(), Jwts.SIG.HS512)
                 .compact();
     }
 
@@ -61,13 +59,15 @@ public class JwtTokenProvider {
     }
 
     private SecretKey signingKey() {
-        try {
-            MessageDigest sha = MessageDigest.getInstance("SHA-256");
-            byte[] keyBytes = sha.digest(
-                    appProperties.getJwt().getSecret().getBytes(StandardCharsets.UTF_8));
-            return Keys.hmacShaKeyFor(keyBytes);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
+        String secret = appProperties.getJwt().getSecret();
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("JWT secret chưa được cấu hình (app.jwt.secret).");
         }
+        // JJWTS/HS512 yêu cầu key đủ dài. 64 bytes là mốc an toàn cho HS512.
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 64) {
+            throw new IllegalStateException("JWT secret quá ngắn. Cần >= 64 bytes để dùng HS512.");
+        }
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 }

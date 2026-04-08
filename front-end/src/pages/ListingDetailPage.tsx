@@ -1,47 +1,43 @@
-import { Descriptions, Spin, Typography } from 'antd'
+import { Alert, Button, Space } from 'antd'
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { fetchListingById } from '../api/listingApi'
+import { Link, useParams } from 'react-router-dom'
+import { fetchListingById, type ListingDetail } from '../api/listingApi'
+import { PageLoadingState } from '../components/common/PageState'
+import { ListingOverview } from '../components/listings/ListingOverview'
 
 export function ListingDetailPage() {
   const { id } = useParams()
   const [loading, setLoading] = useState(true)
-  const [item, setItem] = useState<Record<string, unknown> | null>(null)
+  const [item, setItem] = useState<ListingDetail | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
     ;(async () => {
       try {
+        setError(null)
         const data = await fetchListingById(Number(id))
-        setItem(data as Record<string, unknown>)
+        setItem(data)
+      } catch {
+        setError('Không thể tải chi tiết phòng.')
       } finally {
         setLoading(false)
       }
     })()
   }, [id])
 
-  if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: 48 }}>
-        <Spin />
-      </div>
-    )
-  }
+  if (loading) return <PageLoadingState />
 
   if (!item) {
-    return <Typography.Text type="danger">Không tìm thấy tin.</Typography.Text>
+    return <Alert type="warning" message={error ?? 'Không tìm thấy tin.'} showIcon />
   }
 
   return (
-    <div>
-      <Typography.Title level={3}>{String(item.title)}</Typography.Title>
-      <Descriptions column={1} bordered size="small">
-        <Descriptions.Item label="Địa chỉ">{String(item.address)}</Descriptions.Item>
-        <Descriptions.Item label="Giá">
-          {Number(item.price).toLocaleString('vi-VN')} đ/tháng
-        </Descriptions.Item>
-        <Descriptions.Item label="Mô tả">{String(item.description ?? '')}</Descriptions.Item>
-      </Descriptions>
-    </div>
+    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      <Link to="/phong">
+        <Button>&larr; Quay lại danh sách</Button>
+      </Link>
+      <ListingOverview item={item} />
+    </Space>
   )
 }
