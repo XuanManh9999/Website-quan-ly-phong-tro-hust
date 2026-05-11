@@ -1,0 +1,275 @@
+@config "../tailwind.config.js";
+@import "tailwindcss";
+
+@layer base {
+  * {
+    @apply antialiased;
+  }
+
+  html, body, #root {
+    height: 100%;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply m-0 font-sans text-ink-900 bg-linear-to-br from-ink-50 via-ink-100 to-slate-200;
+  }
+
+  h1, h2, h3, h4 {
+    @apply tracking-tight text-ink-900;
+  }
+
+  a {
+    @apply no-underline;
+  }
+
+  a:hover {
+    @apply underline;
+  }
+
+  ::selection {
+    background: rgba(37,99,235,0.18);
+  }
+}
+
+@layer components {
+  .input-base {
+    @apply w-full min-h-10 rounded-xl border border-ink-200 bg-white px-3 py-2 text-ink-900 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
+  }
+
+  .btn-primary {
+    @apply inline-flex min-h-10 items-center justify-center rounded-xl bg-ink-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-ink-800 disabled:cursor-not-allowed disabled:opacity-70;
+  }
+
+  .btn-secondary {
+    @apply inline-flex min-h-10 items-center justify-center rounded-xl border border-ink-200 bg-white px-4 py-2 text-sm font-semibold text-ink-700 transition hover:border-ink-300 hover:text-ink-900;
+  }
+
+  .btn-outline {
+    @apply inline-flex min-h-10 items-center justify-center rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-100;
+  }
+
+  .table-base {
+    @apply w-full overflow-hidden rounded-xl border border-ink-200 bg-white text-sm;
+  }
+
+  .toast-container {
+    @apply text-sm;
+  }
+
+  .toast-body {
+    @apply font-medium text-slate-800;
+  }
+
+  .table-base th,
+  .table-base td {
+    @apply border border-ink-200 px-3 py-2;
+  }
+
+  .table-base thead {
+    @apply bg-ink-100 text-[11px] uppercase tracking-[0.08em] text-ink-600;
+  }
+
+  .table-base tbody tr:nth-child(even) {
+    @apply bg-ink-50;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700;
+  }
+
+  .badge-filter {
+    @apply inline-flex items-center rounded-full border border-ink-200 bg-white px-3 py-1 text-[11px] font-medium text-ink-600 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700;
+  }
+
+  /* New shared surfaces (modern, cleaner) */
+  .panel {
+    @apply overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/70;
+  }
+
+  .panel-pad {
+    @apply p-4 sm:p-6;
+  }
+
+  .page-kicker {
+    @apply text-xs font-semibold uppercase tracking-[0.22em] text-slate-400;
+  }
+
+  .page-title {
+    @apply mt-1 text-xl font-semibold text-slate-900 sm:text-2xl;
+  }
+
+  .page-subtitle {
+    @apply mt-1 text-sm text-slate-500;
+  }
+
+  .toolbar {
+    @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .app-container {
+    @apply mx-auto w-full max-w-6xl;
+  }
+
+  /* Premium UI polish */
+  .surface {
+    @apply rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/70 transition;
+  }
+
+  .surface-hover {
+    @apply hover:-translate-y-[1px] hover:shadow-md hover:ring-slate-300/70;
+  }
+
+  .hero-shell {
+    @apply relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-950 via-teal-950 to-emerald-900 text-white shadow-[0_30px_70px_-35px_rgba(15,23,42,0.65)] ring-1 ring-white/10;
+  }
+
+  .hero-chip {
+    @apply inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-100 ring-1 ring-white/15;
+  }
+
+  .hero-title {
+    @apply text-white drop-shadow-sm;
+  }
+
+  .hero-subtitle {
+    @apply text-slate-100/90;
+  }
+
+  /* Prose polish (for admin HTML content) */
+  .prose {
+    @apply leading-relaxed;
+  }
+  .prose :where(h1, h2, h3) {
+    @apply scroll-mt-24;
+  }
+  .prose :where(h2) {
+    @apply mt-7 mb-3;
+  }
+  .prose :where(p) {
+    @apply my-3;
+  }
+  .prose :where(ul, ol) {
+    @apply my-3;
+  }
+  .prose :where(li) {
+    @apply my-1;
+  }
+  .prose :where(a) {
+    @apply font-semibold text-teal-700 no-underline underline-offset-2;
+  }
+  .prose :where(a:hover) {
+    @apply underline text-emerald-800;
+  }
+  .prose :where(code) {
+    @apply rounded bg-slate-100 px-1 py-0.5 text-[0.9em];
+  }
+  .prose :where(blockquote) {
+    @apply rounded-xl border border-slate-200 bg-slate-50 px-4 py-3;
+  }
+
+  /* Cleaner table (less borders, better spacing) */
+  .table-clean {
+    @apply w-full overflow-hidden rounded-xl bg-white text-sm ring-1 ring-slate-200/70;
+  }
+
+  .table-clean thead {
+    @apply bg-slate-50 text-[11px] uppercase tracking-[0.12em] text-slate-500;
+  }
+
+  .table-clean th {
+    @apply px-4 py-3 text-left font-semibold;
+  }
+
+  .table-clean td {
+    @apply px-4 py-3 align-middle text-slate-700;
+  }
+
+  .table-clean tbody tr {
+    @apply border-t border-slate-100;
+  }
+
+  .table-clean tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  /* Editor Quill: đồng bộ UI */
+  .ql-toolbar.ql-snow {
+    @apply border-0 border-b border-slate-200/70 bg-slate-50/60;
+  }
+
+  .ql-container.ql-snow {
+    @apply border-0;
+  }
+
+  .ql-editor {
+    @apply min-h-32 text-sm text-slate-800;
+  }
+
+  /* Trang auth: palette teal/amber, tách biệt khỏi template đen-trắng chung */
+  .auth-shell {
+    @apply bg-gradient-to-b from-teal-50/90 via-white to-amber-50/50;
+  }
+
+  .auth-input-teal {
+    @apply border-teal-200/90 focus:border-teal-500 focus:ring-teal-500/20;
+  }
+
+  .auth-btn-primary {
+    @apply inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-teal-600 to-emerald-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-teal-900/20 transition hover:from-teal-500 hover:to-emerald-600 hover:shadow-teal-900/30 disabled:cursor-not-allowed disabled:opacity-70;
+  }
+
+  .auth-link {
+    @apply font-semibold text-teal-700 underline-offset-2 hover:text-emerald-800 hover:underline;
+  }
+
+  /* Bản đồ nhúng (iframe): ghi đè width/height mặc định từ Google, full width trong khung */
+  .room-map-embed {
+    @apply relative aspect-video w-full max-w-full overflow-hidden;
+  }
+
+  .room-map-embed iframe {
+    position: absolute;
+    inset: 0;
+    display: block;
+    border: 0;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Loading skeleton */
+  .skeleton {
+    @apply relative overflow-hidden rounded-lg bg-slate-200/80;
+  }
+
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+    animation: skeleton-shimmer 1.3s infinite;
+  }
+
+  [data-aos] {
+    will-change: transform, opacity;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-aos] {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
