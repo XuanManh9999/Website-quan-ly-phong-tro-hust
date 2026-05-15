@@ -5,11 +5,15 @@ import com.hust.roomrental.domain.enums.UserRole;
 import com.hust.roomrental.dto.auth.AuthResponse;
 import com.hust.roomrental.dto.auth.LoginRequest;
 import com.hust.roomrental.dto.auth.RegisterRequest;
+import com.hust.roomrental.dto.auth.ResetPasswordRequest;
+import com.hust.roomrental.dto.auth.VerifyEmailRequest;
 import com.hust.roomrental.exception.ApiException;
 import com.hust.roomrental.config.AppProperties;
+import com.hust.roomrental.domain.enums.OtpPurpose;
 import com.hust.roomrental.repository.UserRepository;
 import com.hust.roomrental.security.JwtTokenProvider;
 import com.hust.roomrental.service.AuthService;
+import com.hust.roomrental.service.OtpService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,6 +32,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
     private final AppProperties appProperties;
+    private final OtpService otpService;
 
     @Override
     @Transactional
@@ -59,6 +64,23 @@ public class AuthServiceImpl implements AuthService {
                 new UsernamePasswordAuthenticationToken(request.email().toLowerCase(), request.password()));
         User user = (User) auth.getPrincipal();
         return buildAuthResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String email = request.email().toLowerCase();
+        otpService.verifyOtp(email, request.otpCode(), OtpPurpose.RESET_PASSWORD);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "Không tìm thấy tài khoản"));
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+    }
+
+    @Override
+    @Transactional
+    public void verifyEmail(User user, VerifyEmailRequest request) {
+        otpService.verifyOtp(user.getEmail(), request.otpCode(), OtpPurpose.VERIFY_EMAIL);
+        user.setEmailVerified(true);
     }
 
     private AuthResponse buildAuthResponse(User user) {

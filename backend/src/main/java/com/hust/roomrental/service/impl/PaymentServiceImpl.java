@@ -17,9 +17,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Map;
 import java.util.UUID;
 
@@ -46,11 +46,19 @@ public class PaymentServiceImpl implements PaymentService {
                 .user(user)
                 .subscriptionPackage(pkg)
                 .amountVnd(pkg.getPriceVnd())
+                .originalAmountVnd(pkg.getPriceVnd())
+                .discountAmountVnd(BigDecimal.ZERO)
                 .status(PaymentOrderStatus.PENDING)
                 .vnpTxnRef(txnRef)
                 .build();
         order = paymentOrderRepository.save(order);
-        String paymentUrl = buildStubPaymentUrl(order);
+        String paymentUrl = vnPaySignatureVerifier.buildPaymentUrl(
+                order.getVnpTxnRef(),
+                order.getAmountVnd().longValue(),
+                "Thanh toan goi " + pkg.getName(),
+                "127.0.0.1",
+                appProperties.getVnpay().getReturnUrl()
+        );
         return new CreatePaymentResponse(order.getId(), paymentUrl, txnRef);
     }
 
@@ -62,6 +70,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
         String txnRef = params.get("vnp_TxnRef");
         String code = params.get("vnp_ResponseCode");
+        String amountStr = params.get("vnp_Amount");
         if (txnRef == null) {
             return "01";
         }
@@ -70,14 +79,37 @@ public class PaymentServiceImpl implements PaymentService {
             return "01";
         }
         if (order.getStatus() == PaymentOrderStatus.PAID) {
-            return "00";
+            return "02";
+        }
+        if (amountStr != null) {
+            try {
+                long amount = Long.parseLong(amountStr);
+                long expected = order.getAmountVnd()
+                        .multiply(java.math.BigDecimal.valueOf(100))
+                        .longValue();
+                if (!Objects.equals(amount, expected)) {
+                    order.setRawIpnPayload(params.toString());
+                    order.setStatus(PaymentOrderStatus.FAILED);
+                    return "04";
+                }
+            } catch (NumberFormatException e) {
+                order.setRawIpnPayload(params.toString());
+                order.setStatus(PaymentOrderStatus.FAILED);
+                return "04";
+            }
         }
         if ("00".equals(code)) {
             markPaid(order, params.getOrDefault("vnp_TransactionNo", ""), params.toString());
         } else {
             order.setStatus(PaymentOrderStatus.FAILED);
+            order.setRawIpnPayload(params.toString());
         }
         return "00";
+    }
+
+    @Override
+    public boolean verifyReturnSignature(Map<String, String> params) {
+        return vnPaySignatureVerifier.verifyIpn(params);
     }
 
     private void markPaid(PaymentOrder order, String vnpTxnNo, String raw) {
@@ -91,12 +123,4 @@ public class PaymentServiceImpl implements PaymentService {
         u.setBonusListingSlots(u.getBonusListingSlots() + extra);
     }
 
-    private String buildStubPaymentUrl(PaymentOrder order) {
-        String base = appProperties.getVnpay().getPaymentUrl();
-        String orderInfo = URLEncoder.encode("RoomRental order " + order.getId(), StandardCharsets.UTF_8);
-        return base + "?vnp_TxnRef=" + order.getVnpTxnRef()
-                + "&vnp_Amount=" + order.getAmountVnd().multiply(java.math.BigDecimal.valueOf(100)).longValue()
-                + "&vnp_OrderInfo=" + orderInfo
-                + "&stub=1";
-    }
 }

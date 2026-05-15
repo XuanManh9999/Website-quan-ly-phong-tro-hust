@@ -18,6 +18,7 @@ import com.hust.roomrental.service.ArticleService;
 import com.hust.roomrental.service.mapper.ArticleMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -38,10 +39,11 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ArticleSummaryResponse> searchPublished(String categorySlug, String q, Pageable pageable) {
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         Page<Article> page = articleRepository.searchPublished(
                 emptyToNull(categorySlug),
                 emptyToNull(q),
-                pageable
+                safePageable
         );
         return PageResponse.from(page.map(ArticleMapper::toSummary));
     }

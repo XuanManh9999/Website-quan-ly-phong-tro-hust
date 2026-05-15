@@ -1,5 +1,6 @@
 package com.hust.roomrental.service.impl;
 
+import com.hust.roomrental.config.ListingSearchCacheConfig;
 import com.hust.roomrental.domain.entity.Listing;
 import com.hust.roomrental.domain.entity.User;
 import com.hust.roomrental.domain.enums.ListingStatus;
@@ -12,6 +13,7 @@ import com.hust.roomrental.service.AdminListingService;
 import com.hust.roomrental.service.ListingQuotaService;
 import com.hust.roomrental.service.mapper.ListingMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -37,6 +39,7 @@ public class AdminListingServiceImpl implements AdminListingService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {ListingSearchCacheConfig.PUBLIC_LISTING_SEARCH}, allEntries = true)
     public void approve(Long listingId) {
         Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "LISTING_NOT_FOUND", "Không tìm thấy tin"));
@@ -45,8 +48,13 @@ public class AdminListingServiceImpl implements AdminListingService {
         }
         User owner = userRepository.findById(listing.getOwner().getId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "Không tìm thấy user"));
-        if (!listingQuotaService.canPublishOneMore(owner)) {
-            throw new ApiException(HttpStatus.CONFLICT, "QUOTA_EXCEEDED", "Chủ trọ đã hết quota đăng tin trong tháng");
+        var q = listingQuotaService.getQuotaInfo(owner);
+        if (q.used() >= q.allowed()) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "QUOTA_EXCEEDED",
+                    "Chủ trọ đã hết quota đăng tin trong tháng (" + q.used() + "/" + q.allowed() + "). Vui lòng mua gói để tăng quota."
+            );
         }
         listing.setStatus(ListingStatus.PUBLISHED);
         listing.setPublishedAt(Instant.now());
@@ -54,6 +62,7 @@ public class AdminListingServiceImpl implements AdminListingService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {ListingSearchCacheConfig.PUBLIC_LISTING_SEARCH}, allEntries = true)
     public void reject(Long listingId) {
         Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "LISTING_NOT_FOUND", "Không tìm thấy tin"));

@@ -40,6 +40,10 @@ public class OtpServiceImpl implements OtpService {
         if (purpose == OtpPurpose.REGISTER && userRepository.existsByEmail(email)) {
             throw new ApiException(HttpStatus.CONFLICT, "EMAIL_EXISTS", "Email đã được đăng ký");
         }
+        if (purpose == OtpPurpose.RESET_PASSWORD && !userRepository.existsByEmail(email.toLowerCase())) {
+            // Không tiết lộ email có tồn tại hay không; trả về OK nhưng không gửi OTP.
+            return;
+        }
         String code = generateNumericOtp();
         String hash = hashCode(code);
         Instant exp = Instant.now().plus(TTL_MINUTES, ChronoUnit.MINUTES);
@@ -52,6 +56,20 @@ public class OtpServiceImpl implements OtpService {
                 .build();
         otpTokenRepository.save(token);
         emailNotificationService.sendOtpEmail(email, code);
+    }
+
+    @Override
+    @Transactional
+    public void checkOtp(String email, String code, OtpPurpose purpose) {
+        OtpToken token = otpTokenRepository
+                .findTopByEmailAndPurposeAndConsumedIsFalseOrderByCreatedAtDesc(email.toLowerCase(), purpose)
+                .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "OTP_NOT_FOUND", "Không có mã OTP hợp lệ"));
+        if (token.getExpiresAt().isBefore(Instant.now())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "OTP_EXPIRED", "Mã OTP đã hết hạn");
+        }
+        if (!token.getCodeHash().equals(hashCode(code))) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "OTP_INVALID", "Mã OTP không đúng");
+        }
     }
 
     @Override

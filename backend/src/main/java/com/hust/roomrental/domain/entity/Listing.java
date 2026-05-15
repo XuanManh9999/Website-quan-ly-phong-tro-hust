@@ -3,6 +3,7 @@ package com.hust.roomrental.domain.entity;
 import com.hust.roomrental.domain.enums.ListingStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -30,7 +31,8 @@ public class Listing {
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
-    @Column(nullable = false, length = 255)
+    // Ép kiểu rõ ràng để PostgreSQL không tạo nhầm bytea khi recreate DB.
+    @Column(nullable = false, length = 255, columnDefinition = "varchar(255)")
     private String title;
 
     @Column(columnDefinition = "TEXT")
@@ -42,14 +44,31 @@ public class Listing {
     @Column(name = "area_m2")
     private Double areaM2;
 
-    @Column(nullable = false, length = 500)
+    @Column(nullable = false, length = 500, columnDefinition = "varchar(500)")
     private String address;
 
-    @Column(length = 120)
+    @Column(length = 120, columnDefinition = "varchar(120)")
     private String district;
 
     private Double latitude;
     private Double longitude;
+
+    @Column(name = "max_occupants")
+    private Integer maxOccupants;
+
+    /** male | female | any */
+    @Column(name = "gender_policy", length = 16, columnDefinition = "varchar(16)")
+    private String genderPolicy;
+
+    @Column(precision = 14, scale = 0)
+    private BigDecimal deposit;
+
+    @Column(name = "map_embed_html", columnDefinition = "TEXT")
+    private String mapEmbedHtml;
+
+    /** JSON string for utilities; store as text for portability. */
+    @Column(name = "utilities_json", columnDefinition = "TEXT")
+    private String utilitiesJson;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
@@ -74,6 +93,7 @@ public class Listing {
     private Instant updatedAt;
 
     @OneToMany(mappedBy = "listing", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 32)
     @Builder.Default
     private List<ListingImage> images = new ArrayList<>();
 

@@ -1,5 +1,6 @@
 package com.hust.roomrental.service.impl;
 
+import com.hust.roomrental.config.ListingSearchCacheConfig;
 import com.hust.roomrental.domain.entity.Listing;
 import com.hust.roomrental.domain.entity.ListingImage;
 import com.hust.roomrental.domain.entity.User;
@@ -14,7 +15,10 @@ import com.hust.roomrental.repository.ListingRepository;
 import com.hust.roomrental.service.ListingService;
 import com.hust.roomrental.service.mapper.ListingMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -31,22 +35,43 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = {ListingSearchCacheConfig.PUBLIC_LISTING_SEARCH},
+            keyGenerator = "listingSearchCacheKeyGenerator"
+    )
     public PageResponse<ListingResponse> searchPublic(
             String district,
+            String ward,
+            String province,
             String q,
             java.math.BigDecimal minPrice,
             java.math.BigDecimal maxPrice,
+            Double minArea,
+            Double maxArea,
+            String sort,
             Pageable pageable
     ) {
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         Page<Listing> page = listingRepository.searchPublic(
-                ListingStatus.PUBLISHED,
+                ListingStatus.PUBLISHED.name(),
                 emptyToNull(district),
                 emptyToNull(q),
                 minPrice,
                 maxPrice,
-                pageable
+                minArea,
+                maxArea,
+                emptyToNull(ward),
+                emptyToNull(province),
+                normalizeSort(sort),
+                safePageable
         );
         return PageResponse.from(page.map(ListingMapper::toResponse));
+    }
+
+    private String normalizeSort(String sort) {
+        if ("priceAsc".equalsIgnoreCase(sort)) return "priceAsc";
+        if ("priceDesc".equalsIgnoreCase(sort)) return "priceDesc";
+        return "recommended";
     }
 
     @Override
@@ -58,6 +83,7 @@ public class ListingServiceImpl implements ListingService {
             throw new ApiException(HttpStatus.NOT_FOUND, "LISTING_NOT_FOUND", "Không tìm thấy tin");
         }
         listing.setViewCount(listing.getViewCount() + 1);
+        listingRepository.save(listing);
         return ListingMapper.toResponse(listing);
     }
 
@@ -71,6 +97,7 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {ListingSearchCacheConfig.PUBLIC_LISTING_SEARCH}, allEntries = true)
     public ListingResponse create(User landlord, ListingUpsertRequest request) {
         assertLandlord(landlord);
         Listing listing = Listing.builder()
@@ -83,6 +110,11 @@ public class ListingServiceImpl implements ListingService {
                 .district(request.district())
                 .latitude(request.latitude())
                 .longitude(request.longitude())
+                .maxOccupants(request.maxOccupants())
+                .genderPolicy(request.genderPolicy())
+                .deposit(request.deposit())
+                .mapEmbedHtml(request.mapEmbedHtml())
+                .utilitiesJson(request.utilitiesJson())
                 .status(ListingStatus.PENDING_REVIEW)
                 .roomAvailable(request.roomAvailable())
                 .viewCount(0)
@@ -95,6 +127,7 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {ListingSearchCacheConfig.PUBLIC_LISTING_SEARCH}, allEntries = true)
     public ListingResponse update(User landlord, Long id, ListingUpsertRequest request) {
         assertLandlord(landlord);
         Listing listing = listingRepository.findDetailById(id)
@@ -113,6 +146,11 @@ public class ListingServiceImpl implements ListingService {
         listing.setDistrict(request.district());
         listing.setLatitude(request.latitude());
         listing.setLongitude(request.longitude());
+        listing.setMaxOccupants(request.maxOccupants());
+        listing.setGenderPolicy(request.genderPolicy());
+        listing.setDeposit(request.deposit());
+        listing.setMapEmbedHtml(request.mapEmbedHtml());
+        listing.setUtilitiesJson(request.utilitiesJson());
         listing.setRoomAvailable(request.roomAvailable());
         listing.getImages().clear();
         listing.getImages().addAll(mapImages(listing, request.images()));
@@ -124,6 +162,7 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {ListingSearchCacheConfig.PUBLIC_LISTING_SEARCH}, allEntries = true)
     public void delete(User landlord, Long id) {
         assertLandlord(landlord);
         Listing listing = listingRepository.findById(id)

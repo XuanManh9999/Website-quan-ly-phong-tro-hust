@@ -17,6 +17,11 @@ public record ListingUpsertRequest(
         @Size(max = 120) String district,
         Double latitude,
         Double longitude,
+        Integer maxOccupants,
+        @Size(max = 16) String genderPolicy,
+        BigDecimal deposit,
+        @Size(max = 20000) String mapEmbedHtml,
+        @Size(max = 20000) String utilitiesJson,
         boolean roomAvailable,
         List<ListingImageDto> images
 ) {

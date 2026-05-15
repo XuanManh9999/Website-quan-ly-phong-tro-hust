@@ -46,7 +46,7 @@ public class Article {
     @Column(nullable = false, length = 32)
     private ArticleStatus status;
 
-    @Column(name = "cover_url", length = 1024)
+    @Column(name = "cover_url", columnDefinition = "TEXT")
     private String coverUrl;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

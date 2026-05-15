@@ -28,6 +28,7 @@ public final class ArticleMapper {
 
     public static ArticleDetailResponse toDetail(Article a) {
         var tags = a.getTags().stream().map(t -> t.getName()).collect(Collectors.toSet());
+        var tagIds = a.getTags().stream().map(t -> t.getId()).collect(Collectors.toSet());
         return new ArticleDetailResponse(
                 a.getId(),
                 a.getSlug(),
@@ -40,6 +41,7 @@ public final class ArticleMapper {
                 a.getCategory() != null ? a.getCategory().getId() : null,
                 a.getCategory() != null ? a.getCategory().getName() : null,
                 tags,
+                tagIds,
                 a.getAuthor().getFullName() != null ? a.getAuthor().getFullName() : a.getAuthor().getEmail(),
                 a.getPublishedAt(),
                 a.getViewCount(),

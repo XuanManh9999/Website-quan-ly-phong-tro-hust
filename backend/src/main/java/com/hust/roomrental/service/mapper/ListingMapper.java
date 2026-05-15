@@ -2,10 +2,12 @@ package com.hust.roomrental.service.mapper;
 
 import com.hust.roomrental.domain.entity.Listing;
 import com.hust.roomrental.domain.entity.ListingImage;
+import com.hust.roomrental.domain.entity.User;
 import com.hust.roomrental.dto.listing.ListingImageDto;
 import com.hust.roomrental.dto.listing.ListingResponse;
 
 import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
 
 public final class ListingMapper {
@@ -14,15 +16,24 @@ public final class ListingMapper {
     }
 
     public static ListingResponse toResponse(Listing listing) {
-        List<ListingImageDto> images = listing.getImages().stream()
+        User owner = listing.getOwner();
+        Long ownerId = owner != null ? owner.getId() : null;
+        String ownerName = owner != null ? owner.getFullName() : null;
+        String ownerEmail = owner != null ? owner.getEmail() : null;
+        String ownerPhone = owner != null ? owner.getPhone() : null;
+
+        List<ListingImage> listingImages = listing.getImages() != null ? listing.getImages() : Collections.emptyList();
+        List<ListingImageDto> images = listingImages.stream()
                 .sorted(Comparator.comparingInt(ListingImage::getSortOrder))
                 .map(i -> new ListingImageDto(i.getUrl(), i.getSortOrder()))
                 .toList();
-        var owner = listing.getOwner();
+
         return new ListingResponse(
                 listing.getId(),
-                owner.getId(),
-                owner.getFullName(),
+                ownerId,
+                ownerName,
+                ownerEmail,
+                ownerPhone,
                 listing.getTitle(),
                 listing.getDescription(),
                 listing.getPrice(),
@@ -31,6 +42,11 @@ public final class ListingMapper {
                 listing.getDistrict(),
                 listing.getLatitude(),
                 listing.getLongitude(),
+                listing.getMaxOccupants(),
+                listing.getGenderPolicy(),
+                listing.getDeposit(),
+                listing.getMapEmbedHtml(),
+                listing.getUtilitiesJson(),
                 listing.getStatus(),
                 listing.isRoomAvailable(),
                 listing.getExpiresAt(),

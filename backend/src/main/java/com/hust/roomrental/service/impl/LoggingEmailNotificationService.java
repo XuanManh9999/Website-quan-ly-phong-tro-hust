@@ -2,10 +2,12 @@ package com.hust.roomrental.service.impl;
 
 import com.hust.roomrental.service.EmailNotificationService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@ConditionalOnExpression("'${spring.mail.host:}' == ''")
 public class LoggingEmailNotificationService implements EmailNotificationService {
 
     @Override

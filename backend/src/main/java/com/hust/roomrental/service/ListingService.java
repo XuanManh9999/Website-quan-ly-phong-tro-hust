@@ -12,9 +12,14 @@ public interface ListingService {
 
     PageResponse<ListingResponse> searchPublic(
             String district,
+            String ward,
+            String province,
             String q,
             BigDecimal minPrice,
             BigDecimal maxPrice,
+            Double minArea,
+            Double maxArea,
+            String sort,
             Pageable pageable
     );
 

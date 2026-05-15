@@ -35,6 +35,15 @@ public class PaymentOrder {
     @Column(name = "amount_vnd", nullable = false, precision = 14, scale = 0)
     private BigDecimal amountVnd;
 
+    @Column(name = "original_amount_vnd", precision = 14, scale = 0)
+    private BigDecimal originalAmountVnd;
+
+    @Column(name = "discount_amount_vnd", precision = 14, scale = 0)
+    private BigDecimal discountAmountVnd;
+
+    @Column(name = "coupon_code", length = 40)
+    private String couponCode;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private PaymentOrderStatus status;

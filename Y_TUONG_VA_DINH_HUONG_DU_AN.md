@@ -8,7 +8,7 @@
 | Ngày cập nhật | 08/04/2026 |
 | Đối tượng đọc | Product Owner, Dev, QA, thầy hướng dẫn |
 | Phạm vi repo | `front-end` (React), `backend` (Spring Boot) |
-| Trạng thái | Đặc tả + kế hoạch triển khai đang được đồng bộ theo code |
+| Trạng thái | Đặc tả + trạng thái triển khai đang được đồng bộ theo code (UI/UX + API) |
 
 **Mục đích:** Mô tả **nghiệp vụ**, **kiến trúc**, **phân quyền**, **tích hợp** (VNPay, email, OTP, Gemini) và **nội dung** (tin đăng phòng, **bài viết**/blog/CMS) để triển khai thống nhất và có thể kiểm chứng (testable requirements).
 
@@ -35,6 +35,8 @@
 17. [Lịch sử sửa đổi tài liệu](#17-lịch-sử-sửa-đổi-tài-liệu)  
 18. [Kế hoạch triển khai chi tiết (Execution checklist)](#18-kế-hoạch-triển-khai-chi-tiết-execution-checklist)  
 19. [Definition of Done (DoD)](#19-definition-of-done-dod)  
+20. [Chuẩn UI/UX “chuyên nghiệp” (Design system checklist)](#20-chuẩn-uiux-chuyên-nghiệp-design-system-checklist)  
+21. [Bản đồ màn hình & route hiện có (Front-end)](#21-bản-đồ-màn-hình--route-hiện-có-front-end)  
 
 ---
 
@@ -278,7 +280,8 @@ Mục tiêu: cung cấp **tin tức**, **mẹo thuê trọ**, **chính sách n�
 - `GET /api/listings` — public search; `.../api/landlord/listings` — CRUD
 - `GET /api/articles` — public list (filter); `GET /api/articles/{slug}`
 - `POST /api/admin/articles` — CRUD admin; `PATCH .../publish`
-- `POST /api/payments/vnpay/create` — `POST /api/payments/vnpay/ipn`
+- `POST /api/payments/orders` — tạo order + trả `paymentUrl` để redirect VNPay
+- `GET/POST /api/payments/vnpay/ipn` — IPN verify chữ ký + idempotent
 - `POST /api/chat` — Gemini proxy
 - `GET /api/admin/analytics/...` — thống kê tổng hợp
 
@@ -384,41 +387,49 @@ Mục này dùng như checklist để triển khai và nghiệm thu theo sprint.
 
 | Hạng mục | Trạng thái | Ghi chú |
 |----------|------------|---------|
-| Front-end public pages (Home, Listing, Article, Login) | Đang tốt | Đã tách component, có lazy loading route, có render Markdown |
-| Chatbot widget (UI) | Đang tốt | Đã có Drawer chat + gọi API backend |
-| Admin CMS bài viết (UI + API) | Chưa hoàn tất | Cần CRUD, publish flow, preview |
-| Landlord listing workflow | Chưa hoàn tất | Cần tạo/sửa/submit duyệt + quota |
-| VNPay end-to-end | Chưa hoàn tất | Cần IPN idempotent + đối soát |
-| OTP + hardening bảo mật | Chưa hoàn tất | Cần rà soát rate-limit, audit log |
+| Front-end public pages (Home, Listing, Article, Login) | Hoàn thiện tốt | Lazy loading route, filter/search/pagination, render Markdown/HTML |
+| Chatbot widget (UI) | Hoàn thiện tốt | Lưu phiên local, timeout, retry 1 lần, gợi ý nhanh, trạng thái loading |
+| Admin duyệt tin + quản trị bài viết (UI) | Hoàn thiện cơ bản | Có duyệt tin; CRUD bài + status + SEO cơ bản (meta/cover URL) |
+| Landlord listing workflow (UI) | Hoàn thiện cơ bản | CRUD tin; create/update tự đưa về `PENDING_REVIEW` theo backend MVP |
+| VNPay end-to-end (FE) | Hoàn thiện cơ bản | List gói → tạo order → redirect; có trang kết quả thanh toán |
+| VNPay (BE) | Chưa hoàn tất | Cần verify chữ ký IPN đầy đủ theo spec VNPay + idempotency test |
+| OTP + hardening bảo mật | Chưa hoàn tất | Cần UI flow OTP quên mật khẩu; rate limit + audit log |
 
 ### 18.2. Checklist theo module
 
 #### A) Authentication & Profile
-- [ ] Đăng ký/đăng nhập + refresh token (nếu dùng)
+- [x] Đăng ký/đăng nhập JWT (access token)
+- [ ] Refresh token (tuỳ chọn)
 - [ ] OTP luồng quên mật khẩu/đổi email
-- [ ] Role guard ở FE và BE (`SEEKER`, `LANDLORD`, `ADMIN`)
+- [x] Role guard ở FE và BE (`SEEKER`, `LANDLORD`, `ADMIN`, `EDITOR`)
 - [ ] Trang hồ sơ cá nhân (xem/sửa thông tin cơ bản)
 
 #### B) Listing & Quota
-- [ ] CRUD tin cho landlord (ảnh, địa chỉ, giá, mô tả)
-- [ ] Submit duyệt (`PENDING_REVIEW`) và admin duyệt/reject
+- [x] CRUD tin cho landlord (địa chỉ, giá, mô tả, diện tích, tình trạng phòng; ảnh bằng URL)
+- [x] Submit duyệt (`PENDING_REVIEW`) và admin duyệt/reject
 - [ ] Rule quota 5 tin/tháng được đặc tả + test rõ ràng
-- [ ] Bộ lọc nâng cao (giá min/max, diện tích, tiện ích)
+- [x] Bộ lọc nâng cao (giá min/max)
+- [ ] Bộ lọc nâng cao (diện tích, tiện ích, bản đồ)
 
 #### C) Bài viết/CMS
-- [ ] Admin CRUD bài viết + category + tag
-- [ ] Trạng thái bài viết `DRAFT/PUBLISHED/ARCHIVED`
-- [ ] SEO fields (meta title/description, og image)
-- [ ] Public page có bài liên quan + view count chống spam
+- [x] Admin CRUD bài viết (cơ bản)
+- [ ] Admin CRUD category + tag (UI/endpoint)
+- [x] Trạng thái bài viết `DRAFT/PENDING_REVIEW/PUBLISHED/ARCHIVED`
+- [x] SEO fields (meta title/description, cover URL cơ bản)
+- [ ] OG image + preview nâng cao (upload + sanitize)
+- [ ] Public page có bài liên quan (related articles)
+- [x] View count (backend tăng khi mở chi tiết)
 
 #### D) Payment VNPay
-- [ ] Tạo payment intent/order
-- [ ] Redirect + return URL xử lý trạng thái
-- [ ] IPN verify chữ ký + idempotent
+- [x] Tạo payment order từ FE (`/api/v1/payments/orders`)
+- [x] Redirect VNPay từ FE
+- [x] Return UI hiển thị trạng thái (`/thanh-toan/ket-qua`)
+- [ ] IPN verify chữ ký + idempotent (backend)
 - [ ] Áp dụng quota/gói sau khi `PAID` + audit log
 
 #### E) Chatbot Gemini
-- [ ] Giới hạn request/user/ngày
+- [x] Timeout + retry 1 lần + lưu phiên local
+- [ ] Giới hạn request/user/ngày (rate-limit backend)
 - [ ] Filter prompt nhạy cảm + cảnh báo pháp lý
 - [ ] Gợi ý link bài viết liên quan trong câu trả lời
 - [ ] Chuẩn bị phase 2: RAG từ kho bài viết
@@ -449,6 +460,53 @@ Một hạng mục chỉ coi là "xong" khi đạt đủ:
 - [ ] Đã cập nhật lại tài liệu này (mục 17 + mục liên quan)
 
 ---
+
+## 20. Chuẩn UI/UX “chuyên nghiệp” (Design system checklist)
+
+Mục tiêu: đảm bảo giao diện đồng nhất, dễ dùng, “trông chuyên nghiệp” và có tiêu chí kiểm chứng.
+
+### 20.1. Tiêu chí bắt buộc (mọi màn hình)
+- [ ] Có **loading / empty / error state** rõ ràng.
+- [ ] Có **CTA** rõ (hành động chính nổi bật).
+- [ ] Responsive tối thiểu: 360px, 768px, 1024px, 1440px.
+- [ ] Typography và spacing đồng nhất (không lạm dụng inline style).
+- [ ] Thông báo lỗi thân thiện, không lộ stack trace/chi tiết nhạy cảm.
+
+### 20.2. Danh sách chuẩn UI theo module
+- **Public listing**
+  - Filter card gọn, có reset, có phân trang.
+  - Card phòng thể hiện tối thiểu: giá, địa chỉ, khu vực, tình trạng phòng.
+- **Article**
+  - Nội dung hỗ trợ Markdown GFM; code block/table hiển thị đẹp.
+  - Có metadata: tác giả/danh mục/ngày xuất bản/lượt xem.
+- **Landlord**
+  - Bảng quản lý tin: có thao tác sửa/xóa; hiển thị trạng thái chờ duyệt.
+- **Admin**
+  - Tab duyệt tin: approve/reject nhanh.
+  - CMS bài viết: form rõ ràng; status/type/SEO fields đầy đủ.
+- **Payment**
+  - Trang gói dịch vụ: hiển thị giá/benefit rõ.
+  - Trang kết quả thanh toán: success/fail + CTA quay lại.
+
+## 21. Bản đồ màn hình & route hiện có (Front-end)
+
+### 21.1. Public
+- `/` Trang chủ
+- `/phong` Danh sách phòng
+- `/phong/:id` Chi tiết phòng
+- `/tin` Danh sách bài viết
+- `/tin/:slug` Chi tiết bài viết
+- `/dang-nhap` Đăng nhập
+
+### 21.2. Landlord (protected)
+- `/chu-tro/tin` Quản lý tin (CRUD)
+- `/goi-dich-vu` Mua gói qua VNPay
+
+### 21.3. Admin/Editor (protected)
+- `/quan-tri/duyet` Duyệt tin + quản trị bài viết
+
+### 21.4. Payment
+- `/thanh-toan/ket-qua` Kết quả thanh toán VNPay (UI)
 
 ## Phụ lục A - Gợi ý tăng trưởng & vận hành nội dung
 

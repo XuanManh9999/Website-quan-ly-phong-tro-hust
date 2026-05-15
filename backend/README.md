@@ -38,7 +38,7 @@ mvn spring-boot:run
 ## Cấu trúc gói
 
 - `config` — Security, OpenAPI, CORS, seed data
-- `controller` — REST theo version `/api/v1`
+- `controller` — REST khớp front-end SPA (paths gốc: `/auth`, `/rooms`, `/posts`, `/payments`, …)
 - `domain/entity` + `domain/enums`
 - `repository` — Spring Data JPA
 - `service` + `service/impl`

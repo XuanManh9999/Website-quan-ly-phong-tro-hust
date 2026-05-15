@@ -18,6 +18,7 @@ public record ArticleDetailResponse(
         Long categoryId,
         String categoryName,
         Set<String> tagNames,
+        Set<Long> tagIds,
         String authorName,
         Instant publishedAt,
         long viewCount,

@@ -1,11 +1,18 @@
 spring:
   application:
     name: room-rental-api
+  config:
+    import: optional:file:.env[.properties]
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 15MB
   datasource:
-    url: jdbc:postgresql://103.200.23.26:5432/room_rental
+    # SPRING_DATASOURCE_URL / SPRING_DATASOURCE_USERNAME / SPRING_DATASOURCE_PASSWORD (loaded from .env)
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://103.200.23.26:5432/room_rental}
     driver-class-name: org.postgresql.Driver
-    username: root
-    password: toilamanhdevhust
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:toilamanhdevhust}
   jpa:
     open-in-view: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
@@ -16,34 +23,61 @@ spring:
         format_sql: true
   flyway:
     enabled: false
+  mail:
+    # SPRING_MAIL_HOST / SPRING_MAIL_PORT / SPRING_MAIL_USERNAME / SPRING_MAIL_PASSWORD
+    host: ${SPRING_MAIL_HOST:}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:true}
+    default-encoding: UTF-8
 
 server:
+  tomcat:
+    max-http-form-post-size: 15728640
   servlet:
     context-path: /
   error:
     include-message: always
 
 app:
+  debug-errors: ${APP_DEBUG_ERRORS:false}
+  email:
+    # APP_EMAIL_FROM / APP_EMAIL_FROM_NAME
+    from: ${APP_EMAIL_FROM:${SPRING_MAIL_USERNAME:}}
+    from-name: ${APP_EMAIL_FROM_NAME:QL Phòng Trọ}
   jwt:
-    # TODO: thay bằng chuỗi bí mật dài, ngẫu nhiên (HS512).
-    # Lưu ý: không commit secret thật lên git nếu repo public.
-    # Gợi ý: tạo chuỗi >= 64 ký tự (hoặc ~64 bytes). Ví dụ (placeholder):
-    secret: REPLACE_ME_SUPER_LONG_RANDOM_SECRET_FOR_HS512_MIN_64_BYTES
-    expiration-ms: 86400000
+    # APP_JWT_SECRET / APP_JWT_EXPIRATION_MS
+    secret: ${APP_JWT_SECRET:roomrental-hs512-secret-2026-dev-local-at-least-64-bytes-long-value}
+    expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}
   cors:
-    allowed-origins: http://localhost:5173
+    # FRONTEND_ORIGIN: một origin; mặc định gồm localhost + 127.0.0.1 (tránh 403 CORS khi truy cập khác hostname).
+    allowed-origins: ${FRONTEND_ORIGIN:http://localhost:5173,http://127.0.0.1:5173}
   vnpay:
-    # TODO: điền thông tin merchant VNPay
-    tmn-code: "TMJ7UWMF"
-    hash-secret: "PCYPY7L159DSIEKYFRXWCAL6M503VYUH"
+    # APP_VNPAY_TMN_CODE / APP_VNPAY_HASH_SECRET
+    tmn-code: ${APP_VNPAY_TMN_CODE:TMJ7UWMF}
+    hash-secret: ${APP_VNPAY_HASH_SECRET:PCYPY7L159DSIEKYFRXWCAL6M503VYUH}
     payment-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
     return-url: http://localhost:5173/payment/return
     ipn-url: http://localhost:8080/api/v1/payments/vnpay/ipn
   gemini:
-    # TODO: điền Gemini API key (server-side, không đưa ra front-end)
-    api-key: ""
-    model: gemini-2.5-flash
-    api-url: https://generativelanguage.googleapis.com/v1beta/models
+    # APP_GEMINI_API_KEY / APP_GEMINI_MODEL / APP_GEMINI_API_URL
+    api-key: ${APP_GEMINI_API_KEY:AIzaSyBI0QHchx2ofO06eiWgBA6ixVSz-RJ5qwg}
+    model: ${APP_GEMINI_MODEL:gemini-2.5-flash}
+    api-url: ${APP_GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta/models}
+    temperature: ${APP_GEMINI_TEMPERATURE:0.65}
+    max-output-tokens: ${APP_GEMINI_MAX_OUTPUT_TOKENS:1024}
+  chat:
+    # APP_CHAT_MAX_REQ_PER_IP_PER_DAY / APP_CHAT_MAX_MESSAGE_CHARS
+    max-requests-per-ip-per-day: ${APP_CHAT_MAX_REQ_PER_IP_PER_DAY:60}
+    max-message-chars: ${APP_CHAT_MAX_MESSAGE_CHARS:1200}
+    max-history-chars: ${APP_CHAT_MAX_HISTORY_CHARS:3200}
+    max-total-prompt-chars: ${APP_CHAT_MAX_TOTAL_PROMPT_CHARS:12000}
   listing:
     default-quota-per-month: 5
 

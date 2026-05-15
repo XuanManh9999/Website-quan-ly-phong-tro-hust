@@ -1,6 +1,8 @@
 package com.hust.roomrental.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -15,7 +17,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
+
+    @Value("${app.debug-errors:false}")
+    private boolean debugErrors;
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorBody> handleApi(ApiException ex) {
@@ -52,6 +58,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorBody> handleOther(Exception ex) {
+        log.error("Unhandled exception", ex);
+        if (debugErrors) {
+            String detail = ex.getClass().getName() + (ex.getMessage() != null ? (": " + ex.getMessage()) : "");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ErrorBody.of(500, "INTERNAL_ERROR", "Lỗi hệ thống", Map.of("debug", detail)));
+        }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ErrorBody.of(500, "INTERNAL_ERROR", "Lỗi hệ thống", null));
     }

@@ -20,7 +20,7 @@ public class ChatServiceImpl implements ChatService {
         String sessionId = request.sessionId() != null && !request.sessionId().isBlank()
                 ? request.sessionId()
                 : UUID.randomUUID().toString();
-        String reply = geminiClient.generateReply(request.message());
+        String reply = geminiClient.generateReply(request);
         return new ChatResponse(reply, sessionId);
     }
 }
