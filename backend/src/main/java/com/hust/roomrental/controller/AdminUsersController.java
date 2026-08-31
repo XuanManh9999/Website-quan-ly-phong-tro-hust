@@ -167,6 +167,10 @@ public class AdminUsersController {
         m.put("role", toCompatRole(user.getRole()));
         m.put("enabled", user.isEnabled());
         m.put("email_verified", user.isEmailVerified());
+        m.put("avatar_url", user.getAvatarUrl());
+        m.put("address", user.getAddress());
+        m.put("date_of_birth", user.getDateOfBirth() != null ? user.getDateOfBirth().toString() : null);
+        m.put("gender", user.getGender());
         m.put("bonus_listing_slots", user.getBonusListingSlots());
         m.put("created_at", user.getCreatedAt());
         m.put("updated_at", user.getUpdatedAt());

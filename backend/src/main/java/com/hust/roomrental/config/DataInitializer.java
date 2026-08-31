@@ -55,7 +55,7 @@ public class DataInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        User adminHust = upsertUser("admin@hust.local", "Admin@123456", "Quản trị HUST", "0901000001", UserRole.ADMIN);
+        User adminHust = upsertUser("admin@gmail.com", "Admin@123456", "Quản trị viên", "0901000001", UserRole.ADMIN);
         User admin = upsertUser("admin@example.com", "Admin123!", "Admin hệ thống", "0901000002", UserRole.ADMIN);
         User landlord1 = upsertUser("landlord@example.com", "Landlord123!", "Nguyễn Văn An", "0912001001", UserRole.LANDLORD);
         User landlord2 = upsertUser("landlord2@example.com", "Landlord123!", "Trần Thị Bình", "0912001002", UserRole.LANDLORD);
@@ -73,6 +73,15 @@ public class DataInitializer implements ApplicationRunner {
         SubscriptionPackage basic = upsertPackage("basic", "Basic", "Gói mặc định miễn phí", BigDecimal.ZERO, 0, null, true);
         SubscriptionPackage pro = upsertPackage("pro", "Pro", "Nâng quota đăng tin", new BigDecimal("30000"), 25, null, true);
         SubscriptionPackage proPlus = upsertPackage("pro_plus", "Pro+", "Gói cao cấp cho chủ trọ", new BigDecimal("100000"), 95, null, true);
+
+        // Chỉ giữ 3 gói chuẩn: basic, pro, pro_plus; tắt các gói legacy khác
+        List<String> validCodes = List.of("basic", "pro", "pro_plus");
+        subscriptionPackageRepository.findAll().forEach(p -> {
+            if (p.getCode() != null && !validCodes.contains(p.getCode().toLowerCase())) {
+                p.setActive(false);
+                subscriptionPackageRepository.save(p);
+            }
+        });
 
         upsertCoupon("DEMO10", "percent", 10, 50000L, null, 200, 2, LocalDate.now(), LocalDate.now().plusYears(1), true,
                 "Demo: giảm 10% (tối đa 50k) mọi gói trả phí");
@@ -345,6 +354,7 @@ public class DataInitializer implements ApplicationRunner {
         Optional<User> existing = userRepository.findByEmail(email);
         if (existing.isPresent()) {
             User user = existing.get();
+            user.setPasswordHash(passwordEncoder.encode(rawPassword));
             user.setFullName(fullName);
             user.setPhone(phone);
             user.setRole(role);
@@ -373,8 +383,17 @@ public class DataInitializer implements ApplicationRunner {
             Integer priorityDays,
             boolean active
     ) {
-        Optional<SubscriptionPackage> existing = subscriptionPackageRepository.findByCodeAndActiveIsTrue(code);
-        if (existing.isPresent()) return existing.get();
+        Optional<SubscriptionPackage> existing = subscriptionPackageRepository.findByCodeIgnoreCase(code);
+        if (existing.isPresent()) {
+            SubscriptionPackage p = existing.get();
+            p.setName(name);
+            p.setDescription(description);
+            p.setPriceVnd(price);
+            p.setExtraListingsPerMonth(extraListings);
+            p.setPriorityDays(priorityDays);
+            p.setActive(active);
+            return subscriptionPackageRepository.save(p);
+        }
         return subscriptionPackageRepository.save(SubscriptionPackage.builder()
                 .code(code)
                 .name(name)

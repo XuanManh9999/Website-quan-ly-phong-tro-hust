@@ -25,7 +25,7 @@ public final class ListingMapper {
         List<ListingImage> listingImages = listing.getImages() != null ? listing.getImages() : Collections.emptyList();
         List<ListingImageDto> images = listingImages.stream()
                 .sorted(Comparator.comparingInt(ListingImage::getSortOrder))
-                .map(i -> new ListingImageDto(i.getUrl(), i.getSortOrder()))
+                .map(i -> new ListingImageDto(i.getId(), i.getUrl(), i.getSortOrder()))
                 .toList();
 
         return new ListingResponse(

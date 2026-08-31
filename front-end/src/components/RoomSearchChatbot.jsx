@@ -1,45 +1,44 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaBuilding, FaImage, FaLocationDot, FaPaperPlane, FaRobot, FaRulerCombined, FaXmark } from "react-icons/fa6";
+import DOMPurify from "dompurify";
+import { marked } from "marked";
 import { chatApi } from "../api/chatApi.js";
 import { notify } from "../ui/toast";
 import { roomTypeLabelVn } from "../utils/labels.js";
+
+marked.setOptions({
+  breaks: true,
+  gfm: true
+});
 
 function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 /**
- * Văn bản trợ lý: không in URL thô. URL trang phòng (/rooms/số) → nút "Xem phòng";
- * các URL khác bị ẩn (server đã lọc hầu hết).
+ * Hiển thị văn bản AI dưới dạng Markdown đẹp mắt, chuẩn typography
  */
 function AssistantRichText({ text, className }) {
   const raw = String(text || "")
     .replace(/\bhttps?:\/\/[^\s<]*\/rooms\/\{id\}\b/gi, "")
     .replace(/\B\/rooms\/\{id\}\b/gi, "");
-  const re = /(https?:\/\/[^\s<]+)/gi;
-  const pieces = raw.split(re);
+
+  const parsedHtml = marked.parse(raw);
+  const cleanHtml = DOMPurify.sanitize(parsedHtml, {
+    ALLOWED_TAGS: [
+      "p", "strong", "em", "b", "i", "u", "s", "ul", "ol", "li",
+      "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "code", "pre",
+      "br", "hr", "a", "span", "div"
+    ],
+    ALLOWED_ATTR: ["href", "target", "rel", "class"]
+  });
+
   return (
-    <span className={className}>
-      {pieces.map((piece, i) => {
-        if (!/^https?:\/\//i.test(piece)) {
-          return <span key={i}>{piece}</span>;
-        }
-        const room = piece.match(/\/rooms\/(\d+)(?:\/|\?|#|$)/);
-        if (room) {
-          return (
-            <Link
-              key={i}
-              to={`/rooms/${room[1]}`}
-              className="mx-0.5 inline-flex items-center rounded-md bg-teal-600 px-2 py-0.5 align-baseline text-[11px] font-semibold text-white no-underline ring-1 ring-teal-700/20 hover:bg-teal-700"
-            >
-              Xem phòng
-            </Link>
-          );
-        }
-        return null;
-      })}
-    </span>
+    <div
+      className={`prose prose-sm max-w-none text-[13px] leading-relaxed text-slate-800 break-words [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ul]:ml-4 [&_ul]:list-disc [&_ul]:space-y-1 [&_ol]:my-2 [&_ol]:ml-4 [&_ol]:list-decimal [&_ol]:space-y-1 [&_li]:leading-relaxed [&_li>p]:inline [&_strong]:font-semibold [&_strong]:text-slate-900 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-xs [&_code]:text-teal-800 [&_h3]:my-2 [&_h3]:text-sm [&_h3]:font-bold [&_h3]:text-slate-900 [&_h4]:my-1.5 [&_h4]:text-[13px] [&_h4]:font-bold [&_h4]:text-slate-900 [&_blockquote]:border-l-2 [&_blockquote]:border-teal-500 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-slate-600 ${className || ""}`}
+      dangerouslySetInnerHTML={{ __html: cleanHtml }}
+    />
   );
 }
 
@@ -306,7 +305,7 @@ export default function RoomSearchChatbot() {
                   </div>
                   <div className="min-w-0 flex-1 space-y-3">
                     <div className="rounded-2xl rounded-tl-md border border-slate-200/90 bg-white px-4 py-3 text-[13px] leading-relaxed text-slate-800 shadow-sm ring-1 ring-slate-900/[0.04]">
-                      <AssistantRichText text={m.content} className="whitespace-pre-wrap break-words" />
+                      <AssistantRichText text={m.content} />
                     </div>
                     {m.rooms && m.rooms.length > 0 ? (
                       <div className="space-y-2">

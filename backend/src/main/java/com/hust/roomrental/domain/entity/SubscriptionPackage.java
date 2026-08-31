@@ -36,6 +36,7 @@ public class SubscriptionPackage {
     @Column(name = "priority_days")
     private Integer priorityDays;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean active = true;
 }

@@ -27,6 +27,7 @@ public class StaticPage {
     @Column(name = "content_html", columnDefinition = "TEXT")
     private String contentHtml;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean published = true;
 

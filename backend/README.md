@@ -24,7 +24,7 @@ mvn spring-boot:run
 
 ## Tài khoản seed (dev)
 
-- Admin: `admin@hust.local` / `Admin@123456`
+- Admin: `admin@gmail.com` / `Admin@123456`
 
 ## Biến môi trường quan trọng
 

@@ -22,13 +22,6 @@ public class StaticPagesController {
 
     private final StaticPageRepository staticPageRepository;
 
-    @GetMapping("/{slug}")
-    public Map<String, Object> getPublic(@PathVariable String slug) {
-        StaticPage p = staticPageRepository.findBySlugAndPublishedIsTrue(slug)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PAGE_NOT_FOUND", "Không tìm thấy trang"));
-        return Map.of("page", toPublic(p));
-    }
-
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
     public Map<String, Object> adminList() {
@@ -44,6 +37,13 @@ public class StaticPagesController {
         StaticPage p = staticPageRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PAGE_NOT_FOUND", "Không tìm thấy trang"));
         return Map.of("page", toAdmin(p));
+    }
+
+    @GetMapping("/{slug}")
+    public Map<String, Object> getPublic(@PathVariable String slug) {
+        StaticPage p = staticPageRepository.findBySlugAndPublishedIsTrue(slug)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PAGE_NOT_FOUND", "Không tìm thấy trang"));
+        return Map.of("page", toPublic(p));
     }
 
     @PostMapping("/admin")

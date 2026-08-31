@@ -27,6 +27,7 @@ public class FaqItem {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean active = true;
 

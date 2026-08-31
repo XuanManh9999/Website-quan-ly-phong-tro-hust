@@ -13,8 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
@@ -194,12 +193,13 @@ public class ChatController {
     private List<Map<String, Object>> suggestRooms(String text) {
         PriceRange pr = parsePriceRange(text);
         String district = parseDistrict(text);
-        String q = text != null && text.length() > 120 ? text.substring(0, 120) : text;
+        String specificKeyword = extractSpecificKeyword(text);
+
         var page = listingService.searchPublic(
                 district,
                 null,
                 null,
-                q != null && !q.isBlank() ? q : null,
+                specificKeyword,
                 pr.min(),
                 pr.max(),
                 null,
@@ -207,7 +207,55 @@ public class ChatController {
                 null,
                 PageRequest.of(0, 6)
         );
-        return page.content().stream().map(this::suggestRoomFromListing).toList();
+
+        List<Map<String, Object>> list = new ArrayList<>(
+                page.content().stream().map(this::suggestRoomFromListing).toList()
+        );
+
+        // Fallback 1: Nếu chưa đủ phòng, tìm thêm theo mức giá hoặc quận (không kèm keyword hẹp)
+        if (list.size() < 3 && (pr.max() != null || pr.min() != null || district != null)) {
+            var fallback = listingService.searchPublic(
+                    district,
+                    null,
+                    null,
+                    null,
+                    pr.min(),
+                    pr.max(),
+                    null,
+                    null,
+                    null,
+                    PageRequest.of(0, 6)
+            );
+            for (var r : fallback.content()) {
+                if (list.stream().noneMatch(existing -> Objects.equals(existing.get("id"), r.id()))) {
+                    list.add(suggestRoomFromListing(r));
+                    if (list.size() >= 6) break;
+                }
+            }
+        }
+
+        // Fallback 2: Nếu vẫn chưa có phòng nào, lấy các phòng đã duyệt mới nhất trên hệ thống
+        if (list.isEmpty()) {
+            var fallbackLatest = listingService.searchPublic(
+                    null, null, null, null,
+                    null, null, null, null, null,
+                    PageRequest.of(0, 4)
+            );
+            list.addAll(fallbackLatest.content().stream().map(this::suggestRoomFromListing).toList());
+        }
+
+        return list;
+    }
+
+    private String extractSpecificKeyword(String text) {
+        if (text == null || text.isBlank()) return null;
+        String t = text.toLowerCase();
+        if (t.contains("chung cư mini") || t.contains("ccmn")) return "chung cư mini";
+        if (t.contains("gác lửng") || t.contains("gac lung")) return "gác lửng";
+        if (t.contains("ban công") || t.contains("ban cong")) return "ban công";
+        if (t.contains("khép kín") || t.contains("khep kin")) return "khép kín";
+        if (t.contains("full nội thất") || t.contains("full đồ")) return "nội thất";
+        return null;
     }
 
     private Map<String, Object> suggestRoomFromListing(ListingResponse r) {
@@ -230,7 +278,7 @@ public class ChatController {
         if (text == null) return new PriceRange(null, null);
         String t = text.toLowerCase();
         java.util.regex.Matcher range = java.util.regex.Pattern
-                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(?:-|đến|to)\\s*(\\d+(?:[\\.,]\\d+)?)\\s*triệu")
+                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(?:-|đến|to)\\s*(\\d+(?:[\\.,]\\d+)?)\\s*(?:triệu|tr)")
                 .matcher(t);
         if (range.find()) {
             Double a = parseMillion(range.group(1));
@@ -242,13 +290,13 @@ public class ChatController {
             }
         }
 
-        java.util.regex.Matcher under = java.util.regex.Pattern.compile("dưới\\s*(\\d+(?:[\\.,]\\d+)?)\\s*triệu").matcher(t);
+        java.util.regex.Matcher under = java.util.regex.Pattern.compile("(?:dưới|<|<=)\\s*(\\d+(?:[\\.,]\\d+)?)\\s*(?:triệu|tr)").matcher(t);
         if (under.find()) {
             Double m = parseMillion(under.group(1));
             if (m != null) return new PriceRange(null, java.math.BigDecimal.valueOf(m * 1_000_000d));
         }
 
-        java.util.regex.Matcher over = java.util.regex.Pattern.compile("(?:trên|từ)\\s*(\\d+(?:[\\.,]\\d+)?)\\s*triệu").matcher(t);
+        java.util.regex.Matcher over = java.util.regex.Pattern.compile("(?:trên|từ|>|>=)\\s*(\\d+(?:[\\.,]\\d+)?)\\s*(?:triệu|tr)").matcher(t);
         if (over.find()) {
             Double m = parseMillion(over.group(1));
             if (m != null) return new PriceRange(java.math.BigDecimal.valueOf(m * 1_000_000d), null);
@@ -264,9 +312,44 @@ public class ChatController {
         }
     }
 
+    private static final Map<String, String> DISTRICT_KEYWORDS = Map.ofEntries(
+            Map.entry("hai bà trưng", "Hai Bà Trưng"),
+            Map.entry("hai ba trung", "Hai Bà Trưng"),
+            Map.entry("đống đa", "Đống Đa"),
+            Map.entry("dong da", "Đống Đa"),
+            Map.entry("cầu giấy", "Cầu Giấy"),
+            Map.entry("cau giay", "Cầu Giấy"),
+            Map.entry("thanh xuân", "Thanh Xuân"),
+            Map.entry("thanh xuan", "Thanh Xuân"),
+            Map.entry("hoàng mai", "Hoàng Mai"),
+            Map.entry("hoang mai", "Hoàng Mai"),
+            Map.entry("ba đình", "Ba Đình"),
+            Map.entry("ba dinh", "Ba Đình"),
+            Map.entry("hà đông", "Hà Đông"),
+            Map.entry("ha dong", "Hà Đông"),
+            Map.entry("nam từ liêm", "Nam Từ Liêm"),
+            Map.entry("nam tu liem", "Nam Từ Liêm"),
+            Map.entry("bắc từ liêm", "Bắc Từ Liêm"),
+            Map.entry("bac tu liem", "Bắc Từ Liêm"),
+            Map.entry("tây hồ", "Tây Hồ"),
+            Map.entry("tay ho", "Tây Hồ"),
+            Map.entry("long biên", "Long Biên"),
+            Map.entry("long bien", "Long Biên"),
+            Map.entry("hoàn kiếm", "Hoàn Kiếm"),
+            Map.entry("hoan kiem", "Hoàn Kiếm"),
+            Map.entry("bách khoa", "Hai Bà Trưng"),
+            Map.entry("bach khoa", "Hai Bà Trưng"),
+            Map.entry("hust", "Hai Bà Trưng")
+    );
+
     private String parseDistrict(String text) {
-        if (text == null) return null;
+        if (text == null || text.isBlank()) return null;
         String t = text.toLowerCase();
+        for (Map.Entry<String, String> entry : DISTRICT_KEYWORDS.entrySet()) {
+            if (t.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("(quận\\s*\\d+|quận\\s*[a-zà-ỹ0-9\\s]+|huyện\\s*[a-zà-ỹ0-9\\s]+)").matcher(t);
         if (m.find()) {
             String raw = m.group(1).trim().replaceAll("\\s{2,}", " ");

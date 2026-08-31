@@ -57,11 +57,9 @@ export default function MainLayout() {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
       <header
-        className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur"
-        data-aos="fade-down"
-        data-aos-duration="500"
+        className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/85 backdrop-blur-md transition-shadow shadow-xs"
       >
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
           <Link to="/" className="transition hover:opacity-90">
@@ -204,7 +202,7 @@ export default function MainLayout() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-slate-200 bg-slate-950 text-slate-200" data-aos="fade-up">
+      <footer className="border-t border-slate-200 bg-slate-950 text-slate-200">
         <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 md:flex-row md:items-start md:justify-between">
           <div className="space-y-3 text-base">
             <BrandLogo compact inverted />

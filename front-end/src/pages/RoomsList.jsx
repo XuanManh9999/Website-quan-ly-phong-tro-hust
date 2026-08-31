@@ -260,7 +260,7 @@ export default function RoomsListPage() {
 
       <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
         <aside className="space-y-4">
-          <div className="rounded-3xl border border-slate-200 bg-white/95 p-4 sm:p-5" data-aos="fade-right">
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-xs sm:p-5">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Bộ lọc</div>
@@ -471,17 +471,17 @@ export default function RoomsListPage() {
           </div>
 
           <div
-            className="hidden overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 md:block"
-            data-aos="zoom-in-up"
-            data-aos-delay="120"
+            className="hidden overflow-hidden rounded-3xl border border-slate-200/80 bg-slate-50 shadow-xs md:block"
           >
             <div className="relative h-52 w-full">
               <img
                 src="https://images.pexels.com/photos/439227/pexels-photo-439227.jpeg"
                 alt="Bản đồ khu vực"
+                loading="lazy"
+                decoding="async"
                 className="h-full w-full object-cover"
               />
-              <div className="absolute inset-x-4 bottom-4 rounded-2xl bg-black/55 px-3 py-2 text-xs text-slate-100">
+              <div className="absolute inset-x-4 bottom-4 rounded-2xl bg-black/65 px-3 py-2 text-xs text-slate-100 backdrop-blur-xs">
                 <div className="flex items-center gap-2">
                   <I.Map className="text-[14px] text-brand-300" />
                   <div>
@@ -498,8 +498,7 @@ export default function RoomsListPage() {
 
         <section className="space-y-4">
           <div
-            className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white/95 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
-            data-aos="fade-left"
+            className="flex flex-col gap-3 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between sm:p-5"
           >
             <div>
               <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Kết quả</div>
@@ -553,25 +552,25 @@ export default function RoomsListPage() {
               </div>
             ) : null}
 
-            {rooms.map((r, idx) => (
+            {rooms.map((r) => (
               <Link
                 key={r.id}
                 to={`/rooms/${r.id}`}
-                className="group grid gap-4 rounded-3xl border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-200 sm:grid-cols-[220px_minmax(0,1fr)] sm:p-5"
-                data-aos="fade-up"
-                data-aos-delay={Math.min(idx * 60, 240)}
+                className="group grid gap-4 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-brand-300 sm:grid-cols-[220px_minmax(0,1fr)] sm:p-5"
               >
-                <div className="relative h-40 w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                <div className="relative h-44 sm:h-auto sm:aspect-[4/3] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100">
                   {r.cover_image_url ? (
                     <img
                       src={r.cover_image_url}
                       alt={r.title}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                     />
                   ) : (
                     <div className="grid h-full w-full place-items-center text-xs text-slate-400">Chưa có ảnh</div>
                   )}
-                  <div className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-medium text-white backdrop-blur">
+                  <div className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-slate-900/70 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-xs">
                     <I.Verified className="text-[10px] text-emerald-300" />
                     {formatRoomType(r.room_type)}
                   </div>
@@ -579,7 +578,7 @@ export default function RoomsListPage() {
                 <div className="grid gap-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
-                      <div className="line-clamp-2 text-base font-semibold text-slate-900 group-hover:text-brand-700">
+                      <div className="line-clamp-2 text-base font-semibold text-slate-900 group-hover:text-brand-600 transition-colors">
                         {r.title}
                       </div>
                       <div className="flex items-center gap-1 text-xs text-slate-500">
@@ -589,7 +588,7 @@ export default function RoomsListPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <div className="text-sm font-bold text-brand-600">
                         {Number(r.price_monthly).toLocaleString("vi-VN")}{" "}
                         <span className="text-xs font-semibold text-slate-500">VND/tháng</span>
@@ -603,18 +602,18 @@ export default function RoomsListPage() {
 
                   <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600">
                     {r.max_occupants ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 border border-slate-100 px-2 py-1">
                         <I.User className="text-[10px]" />
                         Tối đa {r.max_occupants} người
                       </span>
                     ) : null}
                     {r.gender_policy && r.gender_policy !== "any" ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 border border-slate-100 px-2 py-1">
                         <I.User className="text-[10px]" />
                         {r.gender_policy === "male" ? "Ưu tiên nam" : "Ưu tiên nữ"}
                       </span>
                     ) : null}
-                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-1">
                       <I.Verified className="text-[10px]" />
                       Phòng đã duyệt
                     </span>

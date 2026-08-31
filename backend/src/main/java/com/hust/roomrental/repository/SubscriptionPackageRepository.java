@@ -10,5 +10,7 @@ public interface SubscriptionPackageRepository extends JpaRepository<Subscriptio
 
     Optional<SubscriptionPackage> findByCodeAndActiveIsTrue(String code);
 
+    Optional<SubscriptionPackage> findByCodeIgnoreCase(String code);
+
     List<SubscriptionPackage> findByActiveIsTrueOrderByPriceVndAsc();
 }

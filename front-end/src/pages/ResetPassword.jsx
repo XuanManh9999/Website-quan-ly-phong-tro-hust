@@ -131,7 +131,7 @@ export default function ResetPasswordPage() {
                 className="input-base auth-input-teal"
                 type="password"
                 required
-                minLength={6}
+                minLength={8}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 autoComplete="new-password"
@@ -143,7 +143,7 @@ export default function ResetPasswordPage() {
                 className="input-base auth-input-teal"
                 type="password"
                 required
-                minLength={6}
+                minLength={8}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"

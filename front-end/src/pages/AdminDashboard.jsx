@@ -37,6 +37,12 @@ function defaultMonthRange() {
   return { from: toYmd(from), to: toYmd(to) };
 }
 
+function addDays(d, n) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+
 function lastNDaysRange(days) {
   const to = new Date();
   const from = addDays(to, -(days - 1));
@@ -111,11 +117,7 @@ function parseYmd(s) {
   return new Date(y, m - 1, d);
 }
 
-function addDays(d, n) {
-  const x = new Date(d);
-  x.setDate(x.getDate() + n);
-  return x;
-}
+
 
 function buildDateSeries(fromYmdStr, toYmdStr, items, valueKeys) {
   const from = parseYmd(fromYmdStr);

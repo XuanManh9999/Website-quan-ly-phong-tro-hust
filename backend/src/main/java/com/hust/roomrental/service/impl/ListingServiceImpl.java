@@ -132,11 +132,8 @@ public class ListingServiceImpl implements ListingService {
         assertLandlord(landlord);
         Listing listing = listingRepository.findDetailById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "LISTING_NOT_FOUND", "Không tìm thấy tin"));
-        if (!listing.getOwner().getId().equals(landlord.getId())) {
+        if (!listing.getOwner().getId().equals(landlord.getId()) && landlord.getRole() != UserRole.ADMIN) {
             throw new ApiException(HttpStatus.FORBIDDEN, "NOT_OWNER", "Bạn không phải chủ tin");
-        }
-        if (listing.getStatus() == ListingStatus.PUBLISHED || listing.getStatus() == ListingStatus.EXPIRED) {
-            throw new ApiException(HttpStatus.CONFLICT, "INVALID_STATE", "Không thể sửa tin đã hiển thị/hết hạn theo luồng MVP");
         }
         listing.setTitle(request.title());
         listing.setDescription(request.description());
@@ -152,9 +149,13 @@ public class ListingServiceImpl implements ListingService {
         listing.setMapEmbedHtml(request.mapEmbedHtml());
         listing.setUtilitiesJson(request.utilitiesJson());
         listing.setRoomAvailable(request.roomAvailable());
-        listing.getImages().clear();
-        listing.getImages().addAll(mapImages(listing, request.images()));
-        listing.setStatus(ListingStatus.PENDING_REVIEW);
+        if (request.images() != null && !request.images().isEmpty()) {
+            listing.getImages().clear();
+            listing.getImages().addAll(mapImages(listing, request.images()));
+        }
+        if (listing.getStatus() == ListingStatus.REJECTED || listing.getStatus() == ListingStatus.DRAFT) {
+            listing.setStatus(ListingStatus.PENDING_REVIEW);
+        }
         listing = listingRepository.save(listing);
         listing = listingRepository.findDetailById(listing.getId()).orElse(listing);
         return ListingMapper.toResponse(listing);

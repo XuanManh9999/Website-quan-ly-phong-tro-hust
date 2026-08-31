@@ -10,10 +10,10 @@ import "react-toastify/dist/ReactToastify.css";
 import "./styles.css";
 
 AOS.init({
-  duration: 700,
-  easing: "ease-out-cubic",
+  duration: 400,
+  easing: "ease-out",
   once: true,
-  offset: 40
+  offset: 30,
 });
 
 ReactDOM.createRoot(document.getElementById("root")).render(

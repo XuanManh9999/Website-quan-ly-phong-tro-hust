@@ -7,6 +7,7 @@ import com.hust.roomrental.domain.entity.ArticleLike;
 import com.hust.roomrental.domain.entity.User;
 import com.hust.roomrental.domain.enums.ArticleStatus;
 import com.hust.roomrental.domain.enums.ArticleType;
+import com.hust.roomrental.domain.enums.UserRole;
 import com.hust.roomrental.dto.article.ArticleUpsertRequest;
 import com.hust.roomrental.dto.common.PageResponse;
 import com.hust.roomrental.exception.ApiException;
@@ -25,6 +26,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -77,6 +79,78 @@ public class PostsController {
                 "total", result.totalElements(),
                 "limit", safeLimit,
                 "offset", safeOffset
+        );
+    }
+
+    @GetMapping("/me/bookmarks")
+    public Map<String, Object> myBookmarks(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        if (user == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Bạn chưa đăng nhập");
+        }
+        int safePage = Math.max(1, page);
+        int safeLimit = Math.max(1, Math.min(limit, 100));
+        Pageable pageable = PageRequest.of(safePage - 1, safeLimit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        var result = articleBookmarkRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
+        List<Map<String, Object>> bookmarks = result.getContent().stream().map(b -> {
+            Article a = b.getArticle();
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", b.getId());
+            m.put("post_id", a.getId());
+            m.put("slug", a.getSlug());
+            m.put("post_slug", a.getSlug());
+            m.put("title", a.getTitle());
+            m.put("excerpt", a.getExcerpt());
+            m.put("category_name", a.getCategory() != null ? a.getCategory().getName() : null);
+            m.put("published_at", a.getPublishedAt());
+            return m;
+        }).toList();
+        return Map.of(
+                "items", bookmarks,
+                "bookmarks", bookmarks,
+                "page", safePage,
+                "limit", safeLimit,
+                "total", result.getTotalElements(),
+                "totalPages", result.getTotalPages()
+        );
+    }
+
+    @GetMapping("/me/likes")
+    public Map<String, Object> myLikes(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        if (user == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Bạn chưa đăng nhập");
+        }
+        int safePage = Math.max(1, page);
+        int safeLimit = Math.max(1, Math.min(limit, 100));
+        Pageable pageable = PageRequest.of(safePage - 1, safeLimit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        var result = articleLikeRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
+        List<Map<String, Object>> likes = result.getContent().stream().map(l -> {
+            Article a = l.getArticle();
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", l.getId());
+            m.put("post_id", a.getId());
+            m.put("slug", a.getSlug());
+            m.put("post_slug", a.getSlug());
+            m.put("title", a.getTitle());
+            m.put("excerpt", a.getExcerpt());
+            m.put("category_name", a.getCategory() != null ? a.getCategory().getName() : null);
+            m.put("published_at", a.getPublishedAt());
+            return m;
+        }).toList();
+        return Map.of(
+                "items", likes,
+                "likes", likes,
+                "page", safePage,
+                "limit", safeLimit,
+                "total", result.getTotalElements(),
+                "totalPages", result.getTotalPages()
         );
     }
 
@@ -303,6 +377,7 @@ public class PostsController {
 
     @PostMapping("/{id}/comments")
     @ResponseStatus(HttpStatus.CREATED)
+    @Transactional
     public Map<String, Object> addComment(
             @AuthenticationPrincipal User user,
             @PathVariable Long id,
@@ -340,6 +415,7 @@ public class PostsController {
     }
 
     @PatchMapping("/{id}/comments/{commentId}")
+    @Transactional
     public Map<String, Object> updateComment(
             @AuthenticationPrincipal User user,
             @PathVariable Long id,
@@ -349,12 +425,12 @@ public class PostsController {
         if (user == null) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Bạn chưa đăng nhập");
         }
-        ArticleComment comment = articleCommentRepository.findById(commentId)
+        ArticleComment comment = articleCommentRepository.findWithUserAndParentById(commentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "COMMENT_NOT_FOUND", "Không tìm thấy bình luận"));
         if (!articleCommentRepository.existsByIdAndArticleIdAndDeletedAtIsNull(commentId, id)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "COMMENT_INVALID", "Bình luận không thuộc bài viết này");
         }
-        if (!Objects.equals(comment.getUser().getId(), user.getId())) {
+        if (!Objects.equals(comment.getUser().getId(), user.getId()) && user.getRole() != UserRole.ADMIN) {
             throw new ApiException(HttpStatus.FORBIDDEN, "COMMENT_FORBIDDEN", "Bạn chỉ có thể sửa bình luận của chính mình");
         }
         String content = request.content() == null ? "" : request.content().trim();
@@ -362,11 +438,12 @@ public class PostsController {
             throw new ApiException(HttpStatus.BAD_REQUEST, "COMMENT_EMPTY", "Nội dung bình luận không được để trống");
         }
         comment.setContent(content);
-        articleCommentRepository.save(comment);
+        comment = articleCommentRepository.save(comment);
         return Map.of("ok", true, "comment", toCommentResponse(comment, user));
     }
 
     @DeleteMapping("/{id}/comments/{commentId}")
+    @Transactional
     public Map<String, Object> deleteComment(
             @AuthenticationPrincipal User user,
             @PathVariable Long id,
@@ -375,12 +452,12 @@ public class PostsController {
         if (user == null) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Bạn chưa đăng nhập");
         }
-        ArticleComment comment = articleCommentRepository.findById(commentId)
+        ArticleComment comment = articleCommentRepository.findWithUserAndParentById(commentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "COMMENT_NOT_FOUND", "Không tìm thấy bình luận"));
         if (!articleCommentRepository.existsByIdAndArticleIdAndDeletedAtIsNull(commentId, id)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "COMMENT_INVALID", "Bình luận không thuộc bài viết này");
         }
-        if (!Objects.equals(comment.getUser().getId(), user.getId())) {
+        if (!Objects.equals(comment.getUser().getId(), user.getId()) && user.getRole() != UserRole.ADMIN) {
             throw new ApiException(HttpStatus.FORBIDDEN, "COMMENT_FORBIDDEN", "Bạn chỉ có thể xoá bình luận của chính mình");
         }
         if (articleCommentRepository.existsByParentIdAndDeletedAtIsNull(commentId)) {
@@ -391,77 +468,7 @@ public class PostsController {
         return Map.of("ok", true);
     }
 
-    @GetMapping("/me/bookmarks")
-    public Map<String, Object> myBookmarks(
-            @AuthenticationPrincipal User user,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int limit
-    ) {
-        if (user == null) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Bạn chưa đăng nhập");
-        }
-        int safePage = Math.max(1, page);
-        int safeLimit = Math.max(1, Math.min(limit, 100));
-        Pageable pageable = PageRequest.of(safePage - 1, safeLimit, Sort.by(Sort.Direction.DESC, "createdAt"));
-        var result = articleBookmarkRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
-        List<Map<String, Object>> bookmarks = result.getContent().stream().map(b -> {
-            Article a = b.getArticle();
-            Map<String, Object> m = new HashMap<>();
-            m.put("id", b.getId());
-            m.put("post_id", a.getId());
-            m.put("slug", a.getSlug());
-            m.put("post_slug", a.getSlug());
-            m.put("title", a.getTitle());
-            m.put("excerpt", a.getExcerpt());
-            m.put("category_name", a.getCategory() != null ? a.getCategory().getName() : null);
-            m.put("published_at", a.getPublishedAt());
-            return m;
-        }).toList();
-        return Map.of(
-                "items", bookmarks,
-                "bookmarks", bookmarks,
-                "page", safePage,
-                "limit", safeLimit,
-                "total", result.getTotalElements(),
-                "totalPages", result.getTotalPages()
-        );
-    }
 
-    @GetMapping("/me/likes")
-    public Map<String, Object> myLikes(
-            @AuthenticationPrincipal User user,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int limit
-    ) {
-        if (user == null) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Bạn chưa đăng nhập");
-        }
-        int safePage = Math.max(1, page);
-        int safeLimit = Math.max(1, Math.min(limit, 100));
-        Pageable pageable = PageRequest.of(safePage - 1, safeLimit, Sort.by(Sort.Direction.DESC, "createdAt"));
-        var result = articleLikeRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
-        List<Map<String, Object>> likes = result.getContent().stream().map(l -> {
-            Article a = l.getArticle();
-            Map<String, Object> m = new HashMap<>();
-            m.put("id", l.getId());
-            m.put("post_id", a.getId());
-            m.put("slug", a.getSlug());
-            m.put("post_slug", a.getSlug());
-            m.put("title", a.getTitle());
-            m.put("excerpt", a.getExcerpt());
-            m.put("category_name", a.getCategory() != null ? a.getCategory().getName() : null);
-            m.put("published_at", a.getPublishedAt());
-            return m;
-        }).toList();
-        return Map.of(
-                "items", likes,
-                "likes", likes,
-                "page", safePage,
-                "limit", safeLimit,
-                "total", result.getTotalElements(),
-                "totalPages", result.getTotalPages()
-        );
-    }
 
     private ArticleUpsertRequest toPublishRequest(Article a, ArticleStatus status) {
         return new ArticleUpsertRequest(

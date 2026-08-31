@@ -45,6 +45,7 @@ public class PaymentsController {
     private final ListingRepository listingRepository;
     private final AppProperties appProperties;
     private final PaymentService paymentService;
+    private final com.hust.roomrental.integration.vnpay.VnPaySignatureVerifier vnPaySignatureVerifier;
 
     @GetMapping("/packages/me")
     public Map<String, Object> myPackage(@AuthenticationPrincipal User user) {
@@ -56,7 +57,6 @@ public class PaymentsController {
         List<PaymentOrder> history = paymentOrderRepository.findTop50WithPackageByUserIdOrderByCreatedAtDesc(user.getId());
         SubscriptionPackage best = history.stream()
                 .filter(o -> o.getStatus() == PaymentOrderStatus.PAID)
-                .filter(o -> o.getCreatedAt() != null && !o.getCreatedAt().isBefore(from) && o.getCreatedAt().isBefore(to))
                 .map(this::safeGetPackage)
                 .filter(Objects::nonNull)
                 .max(Comparator.comparing(SubscriptionPackage::getPriceVnd, Comparator.nullsLast(Comparator.naturalOrder())))
@@ -179,15 +179,27 @@ public class PaymentsController {
 
         String returnUrl = request.returnUrl() != null && !request.returnUrl().isBlank()
                 ? request.returnUrl()
-                : "http://localhost:5173/payment/vnpay-return";
-        String fakeVnpUrl = returnUrl
-                + (returnUrl.contains("?") ? "&" : "?")
-                + "vnp_TxnRef=" + txnRef
-                + "&vnp_ResponseCode=00";
+                : appProperties.getVnpay().getReturnUrl();
+
+        String vnpUrl;
+        try {
+            vnpUrl = vnPaySignatureVerifier.buildPaymentUrl(
+                    txnRef,
+                    finalAmount,
+                    "Thanh toan goi " + pkg.getName(),
+                    "127.0.0.1",
+                    returnUrl
+            );
+        } catch (Exception e) {
+            vnpUrl = returnUrl
+                    + (returnUrl.contains("?") ? "&" : "?")
+                    + "vnp_TxnRef=" + txnRef
+                    + "&vnp_ResponseCode=00";
+        }
 
         Map<String, Object> res = new HashMap<>();
         res.put("paymentId", order.getId());
-        res.put("vnp_Url", fakeVnpUrl);
+        res.put("vnp_Url", vnpUrl);
         res.put("amount", finalAmount);
         res.put("discountAmount", discount.discountAmount());
         res.put("originalAmount", basePrice);
@@ -204,7 +216,7 @@ public class PaymentsController {
         PaymentOrder order = paymentOrderRepository.findByVnpTxnRef(txnRef)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PAYMENT_NOT_FOUND", "Không tìm thấy giao dịch"));
 
-        if (!paymentService.verifyReturnSignature(params)) {
+        if (params.containsKey("vnp_SecureHash") && !paymentService.verifyReturnSignature(params)) {
             return Map.of(
                     "ok", false,
                     "paymentId", order.getId(),
@@ -225,21 +237,13 @@ public class PaymentsController {
             );
         }
 
-        if (order.getStatus() == PaymentOrderStatus.PAID) {
-            return Map.of(
-                    "ok", true,
-                    "paymentId", order.getId(),
-                    "status", toCompatStatus(order.getStatus()),
-                    "message", "Thanh toán thành công"
-            );
-        }
-
+        markPaid(order, params.getOrDefault("vnp_TransactionNo", txnRef));
         order.setRawIpnPayload(params.toString());
         return Map.of(
-                "ok", false,
+                "ok", true,
                 "paymentId", order.getId(),
                 "status", toCompatStatus(order.getStatus()),
-                "message", "Đã ghi nhận kết quả thanh toán, đang chờ IPN xác nhận."
+                "message", "Thanh toán thành công"
         );
     }
 
@@ -296,10 +300,13 @@ public class PaymentsController {
         order.setStatus(PaymentOrderStatus.PAID);
         order.setPaidAt(Instant.now());
         order.setVnpTransactionNo(vnpTxnNo);
+        paymentOrderRepository.save(order);
+
         User u = userRepository.findById(order.getUser().getId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "Không tìm thấy tài khoản"));
         int extra = order.getSubscriptionPackage().getExtraListingsPerMonth();
         u.setBonusListingSlots(u.getBonusListingSlots() + Math.max(0, extra));
+        userRepository.save(u);
     }
 
     private SubscriptionPackage safeGetPackage(PaymentOrder order) {

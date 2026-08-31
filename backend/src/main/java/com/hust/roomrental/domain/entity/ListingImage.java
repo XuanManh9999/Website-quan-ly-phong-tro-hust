@@ -20,7 +20,7 @@ public class ListingImage {
     @JoinColumn(name = "listing_id", nullable = false)
     private Listing listing;
 
-    @Column(nullable = false, length = 1024)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String url;
 
     @Column(name = "sort_order", nullable = false)

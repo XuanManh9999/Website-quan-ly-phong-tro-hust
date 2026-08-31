@@ -36,19 +36,34 @@ public class User implements UserDetails {
     @Column(length = 32)
     private String phone;
 
+    @Column(name = "avatar_url", columnDefinition = "TEXT")
+    private String avatarUrl;
+
+    @Column(name = "address", columnDefinition = "TEXT")
+    private String address;
+
+    @Column(name = "date_of_birth")
+    private java.time.LocalDate dateOfBirth;
+
+    @Column(name = "gender", length = 32)
+    private String gender;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private UserRole role;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean enabled = true;
 
+    @Builder.Default
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
 
     /** Slots mua thêm (gói VNPay), trừ dần khi publish tin trong tháng — MVP đơn giản hóa. */
+    @Builder.Default
     @Column(name = "bonus_listing_slots", nullable = false)
-    private int bonusListingSlots;
+    private int bonusListingSlots = 0;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

@@ -74,6 +74,7 @@ public class Listing {
     @Column(nullable = false, length = 32)
     private ListingStatus status;
 
+    @Builder.Default
     @Column(name = "room_available", nullable = false)
     private boolean roomAvailable = true;
 
@@ -83,8 +84,9 @@ public class Listing {
     @Column(name = "published_at")
     private Instant publishedAt;
 
+    @Builder.Default
     @Column(name = "view_count", nullable = false)
-    private long viewCount;
+    private long viewCount = 0;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

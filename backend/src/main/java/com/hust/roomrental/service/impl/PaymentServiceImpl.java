@@ -117,10 +117,13 @@ public class PaymentServiceImpl implements PaymentService {
         order.setPaidAt(Instant.now());
         order.setVnpTransactionNo(vnpTxnNo);
         order.setRawIpnPayload(raw);
+        paymentOrderRepository.save(order);
+
         User u = userRepository.findById(order.getUser().getId())
                 .orElseThrow(() -> new IllegalStateException("user missing"));
         int extra = order.getSubscriptionPackage().getExtraListingsPerMonth();
         u.setBonusListingSlots(u.getBonusListingSlots() + extra);
+        userRepository.save(u);
     }
 
 }

@@ -7,8 +7,12 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ArticleCommentRepository extends JpaRepository<ArticleComment, Long> {
+
+    @EntityGraph(attributePaths = {"user", "parent"})
+    Optional<ArticleComment> findWithUserAndParentById(Long id);
 
     @EntityGraph(attributePaths = {"user"})
     Page<ArticleComment> findByArticleIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(Long articleId, Pageable pageable);

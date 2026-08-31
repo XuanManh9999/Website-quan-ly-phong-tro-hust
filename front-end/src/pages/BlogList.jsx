@@ -195,19 +195,19 @@ export default function BlogListPage() {
               Chưa có bài viết nào. Hãy quay lại sau hoặc đọc thêm tin tức khác.
             </div>
           ) : null}
-          {!busy && posts.map((p, idx) => (
+          {!busy && posts.map((p) => (
             <Link
               key={p.id}
               to={`/blog/${p.slug}`}
-              className="group grid gap-4 rounded-2xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-200 sm:grid-cols-[220px_minmax(0,1fr)] sm:p-5"
-              data-aos="fade-up"
-              data-aos-delay={Math.min(idx * 70, 280)}
+              className="group grid gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-brand-300 sm:grid-cols-[220px_minmax(0,1fr)] sm:p-5"
             >
-              <div className="relative h-36 w-full overflow-hidden rounded-xl border border-ink-200 bg-ink-50">
+              <div className="relative h-36 w-full overflow-hidden rounded-xl border border-slate-200/80 bg-slate-100">
                 {p.cover_image_url ? (
                   <img
                     src={p.cover_image_url}
                     alt={p.title}
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                   />
                 ) : (

@@ -63,12 +63,12 @@ app:
     tmn-code: ${APP_VNPAY_TMN_CODE:TMJ7UWMF}
     hash-secret: ${APP_VNPAY_HASH_SECRET:PCYPY7L159DSIEKYFRXWCAL6M503VYUH}
     payment-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-    return-url: http://localhost:5173/payment/return
+    return-url: ${APP_VNPAY_RETURN_URL:http://localhost:5173/payment/vnpay-return}
     ipn-url: http://localhost:8080/api/v1/payments/vnpay/ipn
   gemini:
     # APP_GEMINI_API_KEY / APP_GEMINI_MODEL / APP_GEMINI_API_URL
     api-key: ${APP_GEMINI_API_KEY:AIzaSyBI0QHchx2ofO06eiWgBA6ixVSz-RJ5qwg}
-    model: ${APP_GEMINI_MODEL:gemini-2.5-flash}
+    model: ${APP_GEMINI_MODEL:gemini-1.5-flash}
     api-url: ${APP_GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta/models}
     temperature: ${APP_GEMINI_TEMPERATURE:0.65}
     max-output-tokens: ${APP_GEMINI_MAX_OUTPUT_TOKENS:1024}

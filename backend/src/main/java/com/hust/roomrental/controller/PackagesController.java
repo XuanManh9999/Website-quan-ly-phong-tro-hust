@@ -82,7 +82,8 @@ public class PackagesController {
     @PreAuthorize("hasRole('ADMIN')")
     public Map<String, Object> update(@PathVariable Long id, @RequestBody UpsertPackageRequest request) {
         int baseQuota = baseQuotaPerMonth();
-        SubscriptionPackage p = subscriptionPackageRepository.findById(id).orElseThrow();
+        SubscriptionPackage p = subscriptionPackageRepository.findById(id)
+                .orElseThrow(() -> new com.hust.roomrental.exception.ApiException(HttpStatus.NOT_FOUND, "PACKAGE_NOT_FOUND", "Không tìm thấy gói"));
         p.setCode(request.code());
         p.setName(request.name());
         p.setDescription(request.description());
@@ -100,6 +101,9 @@ public class PackagesController {
     @DeleteMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public Map<String, Object> remove(@PathVariable Long id) {
+        if (!subscriptionPackageRepository.existsById(id)) {
+            throw new com.hust.roomrental.exception.ApiException(HttpStatus.NOT_FOUND, "PACKAGE_NOT_FOUND", "Không tìm thấy gói");
+        }
         subscriptionPackageRepository.deleteById(id);
         return Map.of("ok", true);
     }

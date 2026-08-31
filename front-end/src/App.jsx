@@ -56,6 +56,14 @@ export default function App() {
           }
         />
         <Route
+          path="/payment/return"
+          element={
+            <RequireAuth>
+              <PaymentReturnPage />
+            </RequireAuth>
+          }
+        />
+        <Route
           path="/landlord/rooms"
           element={
             <RequireRole roles={["landlord", "admin"]}>

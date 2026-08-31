@@ -67,6 +67,7 @@ export default function ChangePasswordPage() {
             Mật khẩu hiện tại
             <input
               type="password"
+              required
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               className="input-base"
@@ -76,6 +77,8 @@ export default function ChangePasswordPage() {
             Mật khẩu mới
             <input
               type="password"
+              required
+              minLength={8}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="input-base"
@@ -85,6 +88,8 @@ export default function ChangePasswordPage() {
             Nhập lại mật khẩu mới
             <input
               type="password"
+              required
+              minLength={8}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="input-base"

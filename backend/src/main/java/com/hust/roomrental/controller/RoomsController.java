@@ -214,7 +214,10 @@ public class RoomsController {
         if (!Objects.equals(listing.getOwner().getId(), user.getId()) && user.getRole() != UserRole.ADMIN) {
             throw new ApiException(HttpStatus.FORBIDDEN, "NOT_OWNER", "Bạn không phải chủ phòng");
         }
-        listing.getImages().removeIf(i -> Objects.equals(i.getId(), imageId));
+        listing.getImages().removeIf(i -> Objects.equals(i.getId(), imageId) || Objects.equals((long) i.getSortOrder(), imageId));
+        for (int idx = 0; idx < listing.getImages().size(); idx++) {
+            listing.getImages().get(idx).setSortOrder(idx);
+        }
         listing = listingRepository.save(listing);
         listing = listingRepository.findDetailById(listing.getId()).orElse(listing);
         return Map.of("room", toCompatRoomDetail(listing));
@@ -344,7 +347,7 @@ public class RoomsController {
 
     private ListingUpsertRequest toListingUpsertRequest(CompatRoomUpsertRequest request) {
         String address = buildAddress(request);
-        List<ListingImageDto> images = List.of();
+        List<ListingImageDto> images = null;
         return new ListingUpsertRequest(
                 request.title(),
                 request.description(),
@@ -414,6 +417,7 @@ public class RoomsController {
         m.put("gender_policy", r.genderPolicy() != null ? r.genderPolicy() : "any");
         m.put("deposit", r.deposit());
         m.put("landlord_full_name", r.ownerName());
+        m.put("landlord_name", r.ownerName());
         m.put("landlord_email", r.ownerEmail());
         m.put("landlord_phone", r.ownerPhone());
         m.put("rejection_reason", null);
@@ -443,7 +447,11 @@ public class RoomsController {
     private Map<String, Object> toCompatRoomDetail(com.hust.roomrental.dto.listing.ListingResponse r) {
         Map<String, Object> m = toCompatRoomSummary(r);
         List<Map<String, Object>> images = (r.images() == null ? List.<ListingImageDto>of() : r.images()).stream()
-                .map(i -> Map.of("id", (Object) i.sortOrder(), "url", i.url(), "sort_order", i.sortOrder()))
+                .map(i -> Map.of(
+                        "id", i.id() != null ? (Object) i.id() : (Object) i.sortOrder(),
+                        "url", i.url(),
+                        "sort_order", i.sortOrder()
+                ))
                 .toList();
         m.put("description", r.description());
         m.put("images", images);

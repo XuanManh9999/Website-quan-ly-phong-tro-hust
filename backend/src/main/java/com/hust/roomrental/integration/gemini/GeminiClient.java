@@ -95,8 +95,12 @@ public class GeminiClient {
             }
             return text.asText().trim();
         } catch (Exception e) {
-            log.warn("Gemini call failed", e);
-            return "Lỗi khi gọi AI: " + e.getMessage() + ". Bạn thử lại sau hoặc mở Danh sách phòng.";
+            log.warn("Gemini call failed: {}", e.getMessage());
+            String errorMsg = e.getMessage() != null ? e.getMessage() : "";
+            if (errorMsg.contains("403") || errorMsg.toLowerCase().contains("leaked") || errorMsg.toLowerCase().contains("permission_denied")) {
+                return "Chào bạn! Trợ lý AI đang tạm ngưng kết nối dịch vụ Gemini (do khóa API cần được làm mới trong file cấu hình .env). Tuy nhiên, bạn vẫn có thể xem các phòng trọ phù hợp được gợi ý bên dưới hoặc dùng bộ lọc ở mục Phòng trọ nhé!";
+            }
+            return "Trợ lý AI đang bận xử lý. Bạn có thể xem ngay các thẻ phòng phù hợp được hệ thống gợi ý bên dưới hoặc mở trang Danh sách phòng để lọc theo nhu cầu.";
         }
     }
 

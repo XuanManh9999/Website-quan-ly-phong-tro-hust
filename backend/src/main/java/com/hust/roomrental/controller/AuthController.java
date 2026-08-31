@@ -78,6 +78,19 @@ public class AuthController {
 
         current.setFullName(request.fullName());
         current.setPhone(request.phone());
+        current.setAddress(request.address());
+        if (request.dateOfBirth() != null && !request.dateOfBirth().isBlank()) {
+            try {
+                current.setDateOfBirth(java.time.LocalDate.parse(request.dateOfBirth().substring(0, 10)));
+            } catch (Exception ignored) {
+            }
+        } else {
+            current.setDateOfBirth(null);
+        }
+        current.setGender(request.gender());
+        current.setAvatarUrl(request.avatarUrl());
+
+        userRepository.save(current);
 
         return Map.of("user", toCompatUser(current));
     }
@@ -126,7 +139,12 @@ public class AuthController {
     private Map<String, Object> toCompatAuthResponse(AuthResponse response) {
         Map<String, Object> data = new HashMap<>();
         data.put("accessToken", response.accessToken());
-        data.put("user", toCompatUser(response.user()));
+        User u = userRepository.findById(response.user().id()).orElse(null);
+        if (u != null) {
+            data.put("user", toCompatUser(u));
+        } else {
+            data.put("user", toCompatUser(response.user()));
+        }
         return data;
     }
 
@@ -137,7 +155,7 @@ public class AuthController {
         m.put("full_name", user.fullName());
         m.put("role", toCompatRole(user.role()));
         m.put("email_verified", user.emailVerified());
-        m.put("phone", null);
+        m.put("phone", user.phone());
         m.put("address", null);
         m.put("date_of_birth", null);
         m.put("gender", null);
@@ -153,10 +171,10 @@ public class AuthController {
         m.put("role", toCompatRole(user.getRole()));
         m.put("email_verified", user.isEmailVerified());
         m.put("phone", user.getPhone());
-        m.put("address", null);
-        m.put("date_of_birth", null);
-        m.put("gender", null);
-        m.put("avatar_url", null);
+        m.put("address", user.getAddress());
+        m.put("date_of_birth", user.getDateOfBirth() != null ? user.getDateOfBirth().toString() : null);
+        m.put("gender", user.getGender());
+        m.put("avatar_url", user.getAvatarUrl());
         return m;
     }
 
