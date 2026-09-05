@@ -28,8 +28,8 @@ public class PaymentOrder {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "package_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "package_id")
     private SubscriptionPackage subscriptionPackage;
 
     @Column(name = "amount_vnd", nullable = false, precision = 14, scale = 0)

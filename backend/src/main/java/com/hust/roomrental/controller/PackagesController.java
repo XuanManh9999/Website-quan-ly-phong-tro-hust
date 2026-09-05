@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -100,11 +101,14 @@ public class PackagesController {
 
     @DeleteMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     public Map<String, Object> remove(@PathVariable Long id) {
-        if (!subscriptionPackageRepository.existsById(id)) {
-            throw new com.hust.roomrental.exception.ApiException(HttpStatus.NOT_FOUND, "PACKAGE_NOT_FOUND", "Không tìm thấy gói");
+        SubscriptionPackage p = subscriptionPackageRepository.findById(id)
+                .orElseThrow(() -> new com.hust.roomrental.exception.ApiException(HttpStatus.NOT_FOUND, "PACKAGE_NOT_FOUND", "Không tìm thấy gói"));
+        if ("basic".equalsIgnoreCase(p.getCode())) {
+            throw new com.hust.roomrental.exception.ApiException(HttpStatus.BAD_REQUEST, "CANNOT_DELETE_BASIC", "Không thể xoá gói mặc định Basic");
         }
-        subscriptionPackageRepository.deleteById(id);
+        subscriptionPackageRepository.delete(p);
         return Map.of("ok", true);
     }
 

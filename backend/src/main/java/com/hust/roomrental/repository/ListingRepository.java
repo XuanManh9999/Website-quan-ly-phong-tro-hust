@@ -25,11 +25,13 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
     @Query("SELECT l FROM Listing l WHERE l.id = :id")
     Optional<Listing> findDetailById(@Param("id") Long id);
 
+    @EntityGraph(attributePaths = {"owner"})
     Page<Listing> findByStatus(ListingStatus status, Pageable pageable);
 
     @EntityGraph(attributePaths = {"owner"})
     Page<Listing> findByOwnerId(Long ownerId, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"owner"})
     Page<Listing> findByOwnerIdAndStatus(Long ownerId, ListingStatus status, Pageable pageable);
 
     @Query("SELECT l.createdAt, l.status FROM Listing l WHERE l.createdAt >= :from AND l.createdAt < :to")

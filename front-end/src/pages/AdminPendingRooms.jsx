@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import DOMPurify from "dompurify";
 import { roomsApi } from "../api/roomsApi";
 import { Icons } from "../ui/icons";
@@ -239,14 +240,51 @@ export default function AdminPendingRoomsPage() {
                     <div className="text-xl font-semibold text-slate-900">{detail.title}</div>
                     <div className="mt-1 text-sm text-slate-500">Trạng thái: {roomStatusLabelVn(detail.status)}</div>
                   </div>
-                  <div className="flex gap-2">
-                    <button type="button" className="btn-secondary" onClick={() => approve(detail.id)} disabled={busy || detail.status !== "pending"}>
-                      Duyệt
-                    </button>
-                    <button type="button" className="btn-outline" onClick={() => reject(detail.id)} disabled={busy || detail.status !== "pending"}>
-                      Từ chối
-                    </button>
-                  </div>
+                  {detail.status === "pending" ? (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="btn-primary !bg-emerald-600 !text-white hover:!bg-emerald-700"
+                        onClick={() => approve(detail.id)}
+                        disabled={busy}
+                      >
+                        Duyệt
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-outline !border-red-200 !bg-red-50 !text-red-700 hover:!bg-red-100"
+                        onClick={() => reject(detail.id)}
+                        disabled={busy}
+                      >
+                        Từ chối
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          detail.status === "approved"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : detail.status === "rejected"
+                            ? "bg-red-50 text-red-700 border border-red-200"
+                            : "bg-slate-100 text-slate-700 border border-slate-200"
+                        }`}
+                      >
+                        {roomStatusLabelVn(detail.status)}
+                      </span>
+                      {detail.status === "approved" ? (
+                        <Link
+                          to={`/rooms/${detail.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-secondary !min-h-8 !px-3 !py-1 text-xs inline-flex items-center gap-1"
+                        >
+                          <span>Xem tin đăng</span>
+                          <span aria-hidden="true">↗</span>
+                        </Link>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-4 text-sm text-slate-500">

@@ -48,6 +48,7 @@ public class PaymentsController {
     private final com.hust.roomrental.integration.vnpay.VnPaySignatureVerifier vnPaySignatureVerifier;
 
     @GetMapping("/packages/me")
+    @Transactional(readOnly = true)
     public Map<String, Object> myPackage(@AuthenticationPrincipal User user) {
         ensureLandlordOrAdmin(user);
         LocalDate firstDay = LocalDate.now().withDayOfMonth(1);
@@ -102,6 +103,7 @@ public class PaymentsController {
     }
 
     @GetMapping("/me/history")
+    @Transactional(readOnly = true)
     public Map<String, Object> myHistory(@AuthenticationPrincipal User user) {
         ensureLandlordOrAdmin(user);
         List<Map<String, Object>> items = paymentOrderRepository.findTop50WithPackageByUserIdOrderByCreatedAtDesc(user.getId()).stream()

@@ -19,6 +19,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -130,6 +131,7 @@ public class RoomsController {
     }
 
     @GetMapping("/{id}/manage")
+    @Transactional(readOnly = true)
     public Map<String, Object> detailManage(
             @AuthenticationPrincipal User user,
             @PathVariable Long id
@@ -244,6 +246,7 @@ public class RoomsController {
 
     @GetMapping("/admin/list")
     @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
     public Map<String, Object> adminList(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
@@ -254,21 +257,22 @@ public class RoomsController {
         int safeLimit = Math.max(1, Math.min(limit, 100));
         Pageable pageable = PageRequest.of(safePage - 1, safeLimit, Sort.by(Sort.Direction.DESC, "updatedAt"));
 
+        ListingStatus st = parseStatus(status);
+        Page<Listing> pageData = listingRepository.findByStatus(st, pageable);
         List<Listing> list;
-        long total;
-        if ("pending".equalsIgnoreCase(status) || status == null || status.isBlank()) {
-            var pending = adminListingService.listPending(pageable);
-            list = pending.content().stream()
-                    .map(r -> listingRepository.findDetailById(r.id()).orElse(null))
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-            total = pending.totalElements();
+        if (!pageData.hasContent()) {
+            list = List.of();
         } else {
-            ListingStatus st = parseStatus(status);
-            var pageData = listingRepository.findByStatus(st, pageable);
-            list = pageData.getContent();
-            total = pageData.getTotalElements();
+            List<Long> ids = pageData.getContent().stream().map(Listing::getId).toList();
+            List<Listing> loaded = listingRepository.findAllWithOwnerAndImagesByIdIn(ids);
+            Map<Long, Integer> order = new HashMap<>();
+            for (int i = 0; i < ids.size(); i++) {
+                order.put(ids.get(i), i);
+            }
+            loaded.sort(Comparator.comparingInt(l -> order.get(l.getId())));
+            list = loaded;
         }
+        long total = pageData.getTotalElements();
 
         List<Map<String, Object>> items = list.stream()
                 .map(this::toCompatRoomDetail)
@@ -284,6 +288,7 @@ public class RoomsController {
 
     @GetMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
     public Map<String, Object> adminDetail(@PathVariable Long id) {
         Listing listing = listingRepository.findDetailById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND", "Không tìm thấy phòng"));
